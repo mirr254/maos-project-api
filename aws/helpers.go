@@ -2,10 +2,6 @@ package aws
 
 import (
 	"fmt"
-	"math/rand"
-	"strconv"
-	"time"
-
 	"github.com/pulumi/pulumi/sdk/go/common/apitype"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -33,13 +29,4 @@ func RemoveResource( depState apitype.DeploymentV3, resSlice []apitype.ResourceV
 
 	return resSlice
 
-}
-
-func SuffixProjectName( projectName string) string {
-
-	rand.Seed( time.Now().UnixNano() )
-	min := 100
-	max := 10000
-
-	return projectName + "-" + strconv.Itoa(rand.Intn( max - min + 1 ) ) 
 }
