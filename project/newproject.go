@@ -10,10 +10,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// create a function that accepts project name, pulumi.yaml file for project defination
-// exec pulumi initial commands using go os libraries
+// A function to run pulumi cli commands
 
+func PulumiCli() {
 
+}
+/*
+CreateProject: function is responsible for creating a new project on pulumi dashboard.
+A Client can have multiple projects.
+params: projectName: This can be client's new project
+
+*/
 func CreateProject( projectName string, region *string ) ([]byte, error) {
 
 	var awsregion string
@@ -34,22 +41,30 @@ func CreateProject( projectName string, region *string ) ([]byte, error) {
 	   return nil, err
 	}
 
-	//Changing the default project values
     pulumiData["name"] = suffixProjectName(projectName)
+    
+	//Access the config property 
+	configProperty, ok := pulumiData["template"].(map[string]interface{})["config"]
+	if !ok {
+       fmt.Println("Could not find aws:region block")
+	   return nil, fmt.Errorf("Could not find aws:region block")
+	}
 
-	pulumiData["template"].(map[string]interface{})["config"].(map[string]interface{}).(map[string]interface{})["aws:region"]["default"].(map[string]interface{})["region"] = awsregion
+	configProperty.(map[string]interface{})["aws:region"].(map[string]interface{})["default"] = awsregion
+	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["projectName"] = suffixProjectName(projectName)
+	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["awsRegionDeployed"] = suffixProjectName(projectName)
+
 
 	pulumiFileBytes, err := yaml.Marshal(pulumiData)
 	if err != nil {
 		fmt.Println("Could not Marshal the new data: ", err)
 	}
 
-	//TODO: Remove
-	fmt.Println(string(pulumiFileBytes))
+	//Debugging purposes
 	fmt.Println("Region: ", awsregion)
+	fmt.Println(string(pulumiFileBytes))
 
 	return pulumiFileBytes, nil
-
 
 }
 
