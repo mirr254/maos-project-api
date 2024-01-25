@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"maos-cloud-project-api/aws"
+	"maos-cloud-project-api/project"
 	"maos-cloud-project-api/stack"
 	"net/http"
 	"os"
@@ -23,6 +24,9 @@ func main() {
 
 func routes() {
 	router := mux.NewRouter()
+
+	//project operations
+	router.HandleFunc("/{project_name}", project.PulumiUp).Methods("POST")
 
 	//Stack operations
     router.HandleFunc("/{project_name}/stack", stack.CreateStack).Methods("POST")
