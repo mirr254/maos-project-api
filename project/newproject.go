@@ -69,7 +69,9 @@ func CreateProject( projectName string, region string ) ([]byte, error) {
 	   return nil, err
 	}
 
-    pulumiData["name"] = suffixProjectName(projectName)
+	suffixedProjectName := suffixProjectName(projectName)
+
+    pulumiData["name"] = suffixedProjectName
     
 	//Access the config property 
 	configProperty, ok := pulumiData["template"].(map[string]interface{})["config"]
@@ -79,7 +81,7 @@ func CreateProject( projectName string, region string ) ([]byte, error) {
 	}
 
 	configProperty.(map[string]interface{})["aws:region"].(map[string]interface{})["default"] = region
-	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["projectName"] = suffixProjectName(projectName)
+	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["projectName"] = suffixedProjectName
 	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["awsRegionDeployed"] = region
 
 	pulumiFileBytes, err := yaml.Marshal(pulumiData)
@@ -194,7 +196,7 @@ func suffixProjectName( projectName string) string {
 
 	rand.Seed( time.Now().UnixNano() )
 	min := 100
-	max := 1000
+	max := 10000
 
 	fmt.Sprintf("Project name is %s", projectName + "-" + strconv.Itoa(rand.Intn( max - min + 1 ) ))
 
