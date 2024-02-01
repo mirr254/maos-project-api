@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -81,7 +82,6 @@ func CreateProject( projectName string, region string ) ([]byte, error) {
 	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["projectName"] = suffixProjectName(projectName)
 	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["awsRegionDeployed"] = region
 
-
 	pulumiFileBytes, err := yaml.Marshal(pulumiData)
 	if err != nil {
 		fmt.Println("Could not Marshal the new data: ", err)
@@ -118,6 +118,8 @@ func CreateProject( projectName string, region string ) ([]byte, error) {
 */
 func runCli() error {
 
+	stackName := "production"
+
 	//check if pulumi is installed
 	checkPulumiCmd := exec.Command("pulumi", "version")
 	_, err := checkPulumiCmd.Output()
@@ -127,23 +129,59 @@ func runCli() error {
 		
 		//TODO: Maybe install it
 		return err
+	} 
 
-	} else {
-
-		pulumiUpCmd := exec.Command("pulumi", "up")
-		output, pulumiUpErr := pulumiUpCmd.Output()
-		// pulumiUpErr := pulumiUpCmd.Run()
-		if pulumiUpErr != nil {
-			fmt.Println("Something went wrong", pulumiUpErr.Error())
-			return err
-		}    
-		outputs := string(output) 
-		fmt.Println(outputs)  
+	_, err = CreateStackIfDontExist(stackName)
+	if err != nil {
+		fmt.Println("Could not create Stack: ", err)
+		return err
 	}
+
+	pulumiUpCmd := exec.Command("pulumi", "up", "--stack", stackName, "--skip-preview")
+	output, pulumiUpErr := pulumiUpCmd.CombinedOutput()
+
+	if pulumiUpErr != nil {
+		fmt.Println("Error executing pulumi up command", pulumiUpErr)
+		fmt.Println("Command output: ", string(output))
+		return err
+	}     
+	fmt.Println("Pulumi up ran okay: ",string(output))  
+	
 
 	return nil
 
 }
+
+/*
+ A fuction to check if the stack exists, and creates it if doesn't exist
+Params: 
+   stackName: Name of the stack we are checking
+
+ */
+func CreateStackIfDontExist( stackName string) (bool, error) {
+
+	// Check if the stack exists using pulumi stack ls
+    cmd := exec.Command("pulumi", "stack", "ls")
+    out, err := cmd.Output()
+    if err != nil {
+        fmt.Println("Error checking stack existence:", err)
+        return false, err
+    }
+
+	//Check if the stack name already exist
+	if !strings.Contains(string(out), stackName) {
+		cmd := exec.Command("pulumi", "stack", "init", stackName)
+		fmt.Println("Creating Stack...")
+        err := cmd.Run()
+        if err != nil {
+            fmt.Println("Error creating stack:", err)
+            return false, err
+        }
+	}
+
+	return true, nil
+}
+
 
 /*
 
