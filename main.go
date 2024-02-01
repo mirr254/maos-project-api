@@ -26,7 +26,7 @@ func routes() {
 	router := mux.NewRouter()
 
 	//project operations
-	router.HandleFunc("/{project_name}", project.PulumiUp).Methods("POST")
+	router.HandleFunc("/{projects}", project.PulumiUp).Methods("POST")
 
 	//Stack operations
     router.HandleFunc("/{project_name}/stack", stack.CreateStack).Methods("POST")
@@ -47,8 +47,11 @@ func routes() {
 	log.Fatal(s.ListenAndServe())
 }
 
-// ensure plugins runs once before the server boots up
-// making sure the proper pulumi plugins are installed
+/* 
+ensure plugins run once before the server boots up
+making sure the proper pulumi plugins are installed
+
+*/
 func ensurePlugins() {
 
 	fmt.Println("Ensuring all deps are instlled")

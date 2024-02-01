@@ -35,7 +35,7 @@ func CreateStack(w http.ResponseWriter, req *http.Request) {
 	var stack Stack
     err := json.NewDecoder(req.Body).Decode(&stack)
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(304)
 		fmt.Fprintf(w, "Failed to parse stack args")
 		return
 	}

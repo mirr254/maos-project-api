@@ -36,7 +36,7 @@ func PulumiUp(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprint(w, "Failed to parse project args")
 	}
 
-	_, err = CreateProject( project.ProjectName, &project.AwsRegion)
+	_, err = CreateProject( project.ProjectName, project.AwsRegion)
 	if err != nil {
 		w.WriteHeader(304)
 		fmt.Fprint(w, err)
@@ -50,15 +50,11 @@ func PulumiUp(w http.ResponseWriter, req *http.Request) {
 CreateProject: function is responsible for creating a new project on pulumi dashboard.
 A Client can have multiple projects.
 params: projectName: This can be client's new project
+        region: AWS region, defaults to us-east-2
 
 */
-func CreateProject( projectName string, region *string ) ([]byte, error) {
+func CreateProject( projectName string, region string ) ([]byte, error) {
 
-	var awsregion string
-	if region != nil {
-        awsregion = *region
-	}
-	
 	pulimiFile, err := os.ReadFile("pulumi-tpl.yaml")
 	if err != nil {
 		fmt.Println("Could not read file: ", err)
@@ -81,9 +77,9 @@ func CreateProject( projectName string, region *string ) ([]byte, error) {
 	   return nil, fmt.Errorf("Could not find aws:region block")
 	}
 
-	configProperty.(map[string]interface{})["aws:region"].(map[string]interface{})["default"] = awsregion
+	configProperty.(map[string]interface{})["aws:region"].(map[string]interface{})["default"] = region
 	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["projectName"] = suffixProjectName(projectName)
-	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["awsRegionDeployed"] = suffixProjectName(projectName)
+	configProperty.(map[string]interface{})["pulumi:tags"].(map[string]interface{})["awsRegionDeployed"] = region
 
 
 	pulumiFileBytes, err := yaml.Marshal(pulumiData)
@@ -91,12 +87,16 @@ func CreateProject( projectName string, region *string ) ([]byte, error) {
 		fmt.Println("Could not Marshal the new data: ", err)
 	}
 
-	//Debugging purposes
-	fmt.Println("Region: ", awsregion)
-	fmt.Println(string(pulumiFileBytes))
+
+	//debugging
+	cwd, err2 := os.Getwd()
+	if err2 != nil {
+        fmt.Println("Error getting working directory:", err)
+    }
+    fmt.Println("Current working directory:", cwd)
 
 	// Create a new pulumi.yaml file in the root directory
-	err = os.WriteFile("../pulumi.yaml", pulumiFileBytes, 0644)
+	err = os.WriteFile("Pulumi.yaml", pulumiFileBytes, 0644)
 	if err != nil {
 		fmt.Println("Could not create pulumi.yaml file: ", err)
 		return nil, err
@@ -120,28 +120,25 @@ func runCli() error {
 
 	//check if pulumi is installed
 	checkPulumiCmd := exec.Command("pulumi", "version")
-	pulumiVersion, err := checkPulumiCmd.Output()
+	_, err := checkPulumiCmd.Output()
 
 	if err != nil {
-		fmt.Printf("Pulumi version %v is not installed", pulumiVersion)
+		fmt.Println("Pulumi is not installed")
+		
+		//TODO: Maybe install it
 		return err
 
-		//TODO: Maybe install it
-
 	} else {
-		cmd := exec.Command("cd", projectRootDir)
-		err := cmd.Run()
-		if err != nil {
-			fmt.Println("Could not change directory", err)
-			return err
-		}
-	
+
 		pulumiUpCmd := exec.Command("pulumi", "up")
-		pulumiUpErr := pulumiUpCmd.Run()
+		output, pulumiUpErr := pulumiUpCmd.Output()
+		// pulumiUpErr := pulumiUpCmd.Run()
 		if pulumiUpErr != nil {
-			fmt.Println("Something went wrong", pulumiUpErr)
+			fmt.Println("Something went wrong", pulumiUpErr.Error())
 			return err
-		}       
+		}    
+		outputs := string(output) 
+		fmt.Println(outputs)  
 	}
 
 	return nil
@@ -159,7 +156,9 @@ func suffixProjectName( projectName string) string {
 
 	rand.Seed( time.Now().UnixNano() )
 	min := 100
-	max := 10000
+	max := 1000
+
+	fmt.Sprintf("Project name is %s", projectName + "-" + strconv.Itoa(rand.Intn( max - min + 1 ) ))
 
 	return projectName + "-" + strconv.Itoa(rand.Intn( max - min + 1 ) ) 
 }
