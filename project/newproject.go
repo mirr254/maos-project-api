@@ -35,7 +35,7 @@ CreateProject: function is responsible for creating a new project on pulumi dash
 A Client can have multiple projects.
 
 */
-// func CreateProject( projectName string, region string ) ([]byte, error) {
+
 func CreateProject(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-type", "application/json")
@@ -160,11 +160,11 @@ func checkPulumi() error {
 }
 
 /*
-  runCommandWithContext uses context cancellation to gracefully stop long running commands
+
+  ExecuteCommandWithTimeout executes a command with a timeout using Goroutine and context
 
 */
 
-// ExecuteCommandWithTimeout executes a command with a timeout using Goroutine and context
 func ExecuteCommandWithTimeout(ctx context.Context, command string, timeout time.Duration, outputWriter io.Writer) (string, error) {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
@@ -195,103 +195,6 @@ func ExecuteCommandWithTimeout(ctx context.Context, command string, timeout time
 	}
 
 }
-
-// func executeCommand(ctx context.Context, cmd *exec.Cmd) (string, error) {
-
-// 	// buffer to store the command output
-// 	var outPutBuffer bytes.Buffer
-
-// 	//set the output of the command into the buffer
-// 	cmd.Stderr = &outPutBuffer
-// 	cmd.Stdout = &outPutBuffer
-
-// 	//Use a wait group to wait for the command to finish
-// 	var wg sync.WaitGroup
-// 	wg.Add(1)
-
-// 	//using channel to signal the command has completed
-// 	done := make(chan error, 1)
-// 	//start a go routing to run the command
-// 	go func() {
-// 		defer wg.Done()
-
-// 		err := cmd.Run()
-
-// 		done <- err
-// 	}()
-
-// 	//go routine to stream output to console
-// 	go func() {
-// 		for {
-// 			select {
-// 			case <-ctx.Done():
-// 				// contes=xt cancelled stop streaming
-// 				return
-// 			default:
-// 				fmt.Print(outPutBuffer.String())
-// 			}
-// 		}
-// 	}()
-
-// 	wg.Wait()
-// 	//close the channel to signal command completion
-// 	close(done)
-
-// 	if err := <-done; err != nil{
-// 		return "", fmt.Errorf("Command Failed with ", err)
-// 	}
-// 	return "success", nil
-
-// 	// logger      := logrus.New()
-// 	// var output string
-
-// 	// outputPipe, err := cmd.StdoutPipe()
-// 	// if err != nil {
-// 	//   return "", err
-// 	// }
-// 	// defer outputPipe.Close()
-
-// 	// scanner := bufio.NewScanner(outputPipe)
-// 	// go func() {
-// 	//   for scanner.Scan() {
-// 	// 	logger.Info(scanner.Text()) // Stream output to console
-// 	// 	output += scanner.Text() + "\n" // Capture for return
-// 	//   }
-// 	// }()
-
-// 	// err = cmd.Start()
-// 	// if err != nil {
-// 	// 	logger.Error("cmd.Start error ",err )
-// 	//   return "", err
-// 	// }
-
-// 	// done := make(chan struct{}) //a channel to signal completion
-// 	// go func ()  {
-// 	// 	err := cmd.Wait()
-// 	// 	if err != nil{
-// 	// 		logger.Error("cmd.Wait error ",err )
-// 	// 		return
-// 	// 	}
-// 	// 	close(done)
-// 	// }()
-
-// 	// select {
-// 	// case <-ctx.Done():
-// 	//   cmd.Process.Kill() // Kill command on timeout
-// 	//   return "", fmt.Errorf("command timed out")
-// 	// case <-done:
-// 	//   if err := cmd.Process.Signal(os.Kill); err != nil { // Graceful shutdown
-// 	// 	fmt.Println("Error stopping command:", err)
-// 	// 	return "", err
-// 	//   }
-// 	//   if cmd.ProcessState.ExitCode() == 0 {
-// 	// 	fmt.Println("Command completed successfully")
-// 	// 	return output, nil
-// 	//   } else {
-// 	// 	return "", fmt.Errorf("command exited with code %d", cmd.ProcessState.ExitCode())
-// 	//   }
-// 	// }
-// }
 
 /*
 A fuction to check if the stack exists, and creates it if doesn't exist
