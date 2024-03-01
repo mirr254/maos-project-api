@@ -1,4 +1,4 @@
-package stack
+package project
 
 import (
 	"context"
@@ -22,10 +22,12 @@ type StackResponse struct {
 	StackName  string `json:"stack_name"`
 }
 
-// This package handles all stack operations including, deleting, updating, list/get stack
+/*
+Creates a new stack for a particular project. Here we understand stack at environment.
+Prod, Staging, Dev
+Return the stack name if created successfully
 
-// Creates a new stack/project
-// Return the stack name if created successfully
+*/
 func CreateStack(w http.ResponseWriter, req *http.Request) {
 
     w.Header().Set("Content-type", "application/json")
@@ -33,7 +35,7 @@ func CreateStack(w http.ResponseWriter, req *http.Request) {
 	var stack Stack
     err := json.NewDecoder(req.Body).Decode(&stack)
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(304)
 		fmt.Fprintf(w, "Failed to parse stack args")
 		return
 	}
