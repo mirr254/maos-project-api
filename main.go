@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"maos-cloud-project-api/aws"
 	"maos-cloud-project-api/project"
 	"maos-cloud-project-api/stack"
@@ -26,7 +25,7 @@ func routes() {
 	router := mux.NewRouter()
 
 	//project operations
-	router.HandleFunc("/{projects}", project.PulumiUp).Methods("POST")
+	router.HandleFunc("/project", project.CreateProject).Methods("POST")
 
 	//Stack operations
     router.HandleFunc("/{project_name}/stack", stack.CreateStack).Methods("POST")
@@ -39,12 +38,17 @@ func routes() {
 	router.HandleFunc("/{project_name}/stack/{stack_name}/aws/vpc/{vpc_id}", aws.UpdateVpc).Methods("PUT")
 
 	//define and start the http server
-	s := &http.Server{
-		Addr: ":1337",
+	server := &http.Server{
+		Addr: ":8080",
 		Handler: router,
 	}
-	fmt.Println("Starting server on :1337")
-	log.Fatal(s.ListenAndServe())
+
+	// logger      := logrus.New()
+	fmt.Println("Starting server on :8080")
+	if err := server.ListenAndServe(); err != nil {
+		fmt.Errorf("An error occured ", err)
+
+	}
 }
 
 /* 
@@ -54,7 +58,7 @@ making sure the proper pulumi plugins are installed
 */
 func ensurePlugins() {
 
-	fmt.Println("Ensuring all deps are instlled")
+	fmt.Println("Ensuring all deps are installed")
 	ctx := context.Background()
 	w, err := auto.NewLocalWorkspace(ctx)
 
