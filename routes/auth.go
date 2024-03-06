@@ -17,8 +17,7 @@ func AuthRoutes(r *gin.Engine) {
 	r.Post("/login", controllers.Login)
 	r.Post("/signup", controllers.Signup)
 	r.Get("/dashboard", utils.IsAuthorized, controllers.Dashboard)
-	r.GET("/premium", controllers.Premium)
-	r.Get("/logout", controllers.Logout)
+	r.Get("/logout",utils.IsAuthorized, controllers.Logout)
 }
 
 func Login(c *gin.Context) {

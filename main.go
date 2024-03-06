@@ -14,7 +14,7 @@ import (
 
 func main() {
 	utils.EnsurePlugins()
-	// aws.CreateAwsSession()
+	// utils.CreateAwsSession()
 	r := gin.Default()
 
 	//load .env file
@@ -24,7 +24,7 @@ func main() {
 	}
 
 	config := models.Config{
-		Host:     os.Getenv("DB_HOSt"),
+		Host:     os.Getenv("DB_HOST"),
 		User:     os.Getenv("DB_USER"),
 		Port:     os.Getenv("DB_PORT"),
 		Password: os.Getenv("DB_PASSWORD"),
