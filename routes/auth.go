@@ -14,9 +14,9 @@ import (
 var jwtkey = []byte(os.Getenv("SECRET_KEY"))
 
 func AuthRoutes(r *gin.Engine) {
-	r.Post("/login", controllers.login)
+	r.Post("/login", controllers.Login)
 	r.Post("/signup", controllers.Signup)
-	r.Get("/home", controllers.Home)
+	r.Get("/dashboard", utils.IsAuthorized, controllers.Dashboard)
 	r.GET("/premium", controllers.Premium)
 	r.Get("/logout", controllers.Logout)
 }
