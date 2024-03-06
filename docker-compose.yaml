@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   database:
-    image: postgres:14
+    image: postgres:13
     ports:
       - "5435:5432"
     environment:
@@ -14,5 +14,5 @@ services:
       - maos-cloud-network
 networks:
   maos-cloud-network:
-    drive: bridge
+    driver: bridge
     
