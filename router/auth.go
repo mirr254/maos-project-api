@@ -1,23 +1,26 @@
-package routes
+package router
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"os"
 	"time"
 
-	gin "github.com/gin-gonic/gin"
-	env "github.com/joho/godotenv"
-	models "go-auth/models"
-	utils "go-auth/utils"
+	"github.com/dgrijalva/jwt-go"
+
+	controllers "maos-cloud-project-api/controllers"
+	"maos-cloud-project-api/middlewares"
+	models "maos-cloud-project-api/models"
+	utils "maos-cloud-project-api/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 var jwtkey = []byte(os.Getenv("SECRET_KEY"))
 
 func AuthRoutes(r *gin.Engine) {
-	r.Post("/login", controllers.Login)
-	r.Post("/signup", controllers.Signup)
-	r.Get("/dashboard", utils.IsAuthorized, controllers.Dashboard)
-	r.Get("/logout",utils.IsAuthorized, controllers.Logout)
+	r.POST("/login", controllers.Login)
+	r.POST("/signup", controllers.Signup)
+	r.GET("/dashboard", middlewares.IsAuthorized(), controllers.Dashboard)
+	r.GET("/logout",middlewares.IsAuthorized(), controllers.Logout)
 }
 
 func Login(c *gin.Context) {
@@ -25,20 +28,20 @@ func Login(c *gin.Context) {
 	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error", err.Error()})
+		c.JSON(400, gin.H{"error": err.Error()})
 	}
 
 	var existingUser models.User
 	models.DB.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID == 0 {
-		c.JSON(400, gin.H{"error", "User doesn't exist"})
+		c.JSON(400, gin.H{"error": "User doesn't exist"})
 		return
 	}
 
 	errHash := utils.CompareHashPassword(user.Password, existingUser.Password)
 	if !errHash {
-		c.JSON(400, gin.H{"error", "Invalid password"})
+		c.JSON(400, gin.H{"error": "Invalid password"})
 		return
 	}
 
@@ -56,10 +59,10 @@ func Login(c *gin.Context) {
 	token_string, err := token.SignedString(jwtkey)
 
 	if err != nil {
-		c.JSON(500, gin.H{"error", "Could not generate token"})
+		c.JSON(500, gin.H{"error": "Could not generate token"})
 		return
 	}
 
-	c.SetCookie("token"token_string, int(expiration_time.Unix()), "/", "localhost", false, true)
+	c.SetCookie("token", token_string, int(expiration_time.Unix()), "/", "localhost", false, true)
 	c.JSON(200, gin.H{"success": "user logged in"})
 }

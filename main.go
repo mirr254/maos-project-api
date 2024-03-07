@@ -2,14 +2,15 @@ package main
 
 import (
 	models "maos-cloud-project-api/models"
-	routes "maos-cloud-project-api/routes"
+	"maos-cloud-project-api/router"
 	utils "maos-cloud-project-api/utils"
-	
+
 	gin "github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	
-	"github.com/joho/godotenv"
+
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 	models.InitDB(config)
 
 	//load routes
-	routes.AuthRoutes(r)
+	router.AuthRoutes(r)
 	r.Run(":8080")
 
 }
