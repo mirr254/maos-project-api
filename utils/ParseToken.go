@@ -1,15 +1,14 @@
 package utils
 
 import (
-	models "maos-cloud-project-api/models"
-	"os"
+	"maos-cloud-project-api/models"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 )
 
 func ParseToken(tokenString string) (claims *models.Claims, err error) {
-	token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return[]byte(os.Getenv("SECRET_KEY")), nil
+	token, err := jwt.ParseWithClaims(tokenString, &models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte("my_secret_key"), nil
 	})
 
 	if err != nil {
@@ -17,6 +16,7 @@ func ParseToken(tokenString string) (claims *models.Claims, err error) {
 	}
 
 	claims, ok := token.Claims.(*models.Claims)
+
 	if !ok {
 		return nil, err
 	}

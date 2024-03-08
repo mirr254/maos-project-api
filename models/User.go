@@ -1,19 +1,13 @@
 package models
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
 	Name     string `json:"name"`
-	Email    string `json:"unique" json:"email"`
+	Email    string `json:"email" gorm:"unique"` 
 	Password string `json:"password"`
-	Role    string  `json:"role"`
-}
-
-type Claims struct {
-	Role string `json:"role"`
-	jwt.StandardClaims
+	Role     string `json:"role"`
 }

@@ -1,45 +1,18 @@
 package controllers
 
 import (
-	"github.com/dgrijalva/jwt-go"
-	"os"
 	"time"
 
-	gin "github.com/gin-gonic/gin"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/sirupsen/logrus"
+
 	models "maos-cloud-project-api/models"
 	utils "maos-cloud-project-api/utils"
+
+	gin "github.com/gin-gonic/gin"
 )
 
-var jwtkey = []byte(os.Getenv("SECRET_KEY"))
-
-func Signup(c *gin.Context) {
-
-	var user models.User
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	var existingUser models.User
-	models.DB.Where("email = ?", user.Email).First(&existingUser)
-
-	if existingUser.ID != 0 {
-		c.JSON(400, gin.H{"error": "user exists"})
-		return
-	}
-
-	var errHash error
-	user.Password, errHash = utils.GenerateHashPassword(user.Password)
-	if errHash != nil {
-		c.JSON(400, gin.H{"error": "could not generate password hash"})
-		return
-	}
-
-	models.DB.Create(&user)
-	c.JSON(200, gin.H{"success": "user created"})
-
-}
+var jwtKey = []byte("my_secret_key")
 
 func Login(c *gin.Context) {
 
@@ -47,43 +20,107 @@ func Login(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 
 	var existingUser models.User
+
 	models.DB.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID == 0 {
-		c.JSON(400, gin.H{"error": "user doesn't exist"})
+		c.JSON(400, gin.H{"error": "user does not exist"})
 		return
 	}
 
 	errHash := utils.CompareHashPassword(user.Password, existingUser.Password)
+
 	if !errHash {
 		c.JSON(400, gin.H{"error": "invalid password"})
 		return
 	}
 
-	//TODO: REDUCE the expiration time
-	expiration_time := time.Now().Add(20 * time.Minute)
+	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &models.Claims{
 		Role: existingUser.Role,
 		StandardClaims: jwt.StandardClaims{
 			Subject:   existingUser.Email,
-			ExpiresAt: expiration_time.Unix(),
+			ExpiresAt: expirationTime.Unix(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token_string, err := token.SignedString(jwtkey)
+
+	tokenString, err := token.SignedString(jwtKey)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": "could not generate token"})
 		return
 	}
 
-	c.SetCookie("token", token_string, int(expiration_time.Unix()), "/", "localhost", false, true)
+	c.SetCookie("token", tokenString, int(expirationTime.Unix()), "/", "localhost", false, true)
 	c.JSON(200, gin.H{"success": "user logged in"})
+}
+
+func Signup(c *gin.Context) {
+	var user models.User
+
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	var existingUser models.User
+
+	models.DB.Where("email = ?", user.Email).First(&existingUser)
+
+	if existingUser.ID != 0 {
+		c.JSON(400, gin.H{"error": "user already exists"})
+		return
+	}
+
+	var errHash error
+	user.Password, errHash = utils.GenerateHashPassword(user.Password)
+
+	if errHash != nil {
+		c.JSON(500, gin.H{"error": "could not generate password hash"})
+		return
+	}
+
+	models.DB.Create(&user)
+
+	c.JSON(200, gin.H{"success": "user created"})
+}
+
+func ResetPassword(c *gin.Context) {
+
+	var user models.User
+
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	var existingUser models.User
+
+	models.DB.Where("email = ?", user.Email).First(&existingUser)
+
+	if existingUser.ID == 0 {
+		c.JSON(400, gin.H{"error": "user does not exist"})
+		return
+	}
+
+	var errHash error
+	user.Password, errHash = utils.GenerateHashPassword(user.Password)
+
+	if errHash != nil {
+		c.JSON(500, gin.H{"error": "could not generate password hash"})
+		return
+	}
+
+	models.DB.Model(&existingUser).Update("password", user.Password)
+
+	c.JSON(200, gin.H{"success": "password updated"})
 }
 
 func Dashboard(c *gin.Context) {
@@ -96,11 +133,12 @@ func Dashboard(c *gin.Context) {
 
 	claims, err := utils.ParseToken(cookie)
 	if err != nil {
+		logrus.Error(err)
 		c.JSON(401, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	if claims.Role != "user" && claims.Role != "admin" {
+	if claims.Role != "admin" {
 		c.JSON(401, gin.H{"error": "unauthorized"})
 		return
 	}
