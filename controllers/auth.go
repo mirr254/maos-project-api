@@ -12,8 +12,6 @@ import (
 	gin "github.com/gin-gonic/gin"
 )
 
-var jwtKey = []byte("my_secret_key")
-
 func Login(c *gin.Context) {
 
 	var user models.User
@@ -50,6 +48,14 @@ func Login(c *gin.Context) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	secretKey, err := utils.GetSecretKey()
+	if err != nil {
+		c.JSON(500, gin.H{"error": err})
+		return
+	}
+
+	jwtKey := []byte(secretKey)
 
 	tokenString, err := token.SignedString(jwtKey)
 
