@@ -1,4 +1,4 @@
-package aws
+package utils
 
 // import (
 // 	"fmt"
@@ -12,7 +12,7 @@ package aws
 	
 //     _, err := session.NewSession(&aws.Config{
 // 		Region:      aws.String("us-east-1"),
-// 		Credentials: credentials.NewSharedCredentials("", "ao"),
+// 		Credentials: credentials.NewSharedCredentials("file_path", "profile_name"),
 // 	})
 
 // 	if err != nil {
