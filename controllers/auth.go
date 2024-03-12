@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -65,7 +66,7 @@ func Login(c *gin.Context) {
 	}
 
 	c.SetCookie("token", tokenString, int(expirationTime.Unix()), "/", "localhost", false, true)
-	c.JSON(200, gin.H{"success": "user logged in"})
+	c.JSON(201, gin.H{"success": "user logged in"})
 }
 
 func Signup(c *gin.Context) {
@@ -95,7 +96,7 @@ func Signup(c *gin.Context) {
 
 	models.DB.Create(&user)
 
-	c.JSON(200, gin.H{"success": "user created"})
+	c.JSON(http.StatusCreated, gin.H{"success": "user created"})
 }
 
 func ResetPassword(c *gin.Context) {
@@ -149,7 +150,7 @@ func Dashboard(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{"success": "dashboard", "role": claims.Role})
+	c.JSON(200, gin.H{"success": "customer dashboard", "role": claims.Role})
 
 }
 
