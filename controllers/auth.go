@@ -77,6 +77,12 @@ func Signup(c *gin.Context) {
 		return
 	}
 
+	// check for empty email
+	if email := user.Email; email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email must be provided"})
+		return
+	}
+
 	var existingUser models.User
 
 	models.DB.Where("email = ?", user.Email).First(&existingUser)
