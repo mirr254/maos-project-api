@@ -82,7 +82,7 @@ func Signup(c *gin.Context) {
 	models.DB.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID != 0 {
-		c.JSON(400, gin.H{"error": "user already exists"})
+		c.JSON( http.StatusConflict, gin.H{"error": "user already exists"})
 		return
 	}
 
@@ -90,7 +90,7 @@ func Signup(c *gin.Context) {
 	user.Password, errHash = utils.GenerateHashPassword(user.Password)
 
 	if errHash != nil {
-		c.JSON(500, gin.H{"error": "could not generate password hash"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate password hash"})
 		return
 	}
 
@@ -127,34 +127,34 @@ func ResetPassword(c *gin.Context) {
 
 	models.DB.Model(&existingUser).Update("password", user.Password)
 
-	c.JSON(200, gin.H{"success": "password updated"})
+	c.JSON(http.StatusOK, gin.H{"success": "password updated"})
 }
 
 func Dashboard(c *gin.Context) {
 
 	cookie, err := c.Cookie("token")
 	if err != nil {
-		c.JSON(401, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	claims, err := utils.ParseToken(cookie)
 	if err != nil {
 		logrus.Error(err)
-		c.JSON(401, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	if claims.Role != "admin" {
-		c.JSON(401, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	c.JSON(200, gin.H{"success": "customer dashboard", "role": claims.Role})
+	c.JSON(http.StatusOK, gin.H{"success": "customer dashboard", "role": claims.Role})
 
 }
 
 func Logout(c *gin.Context) {
 	c.SetCookie("token", "", -1, "/", "localhost", false, true)
-	c.JSON(200, gin.H{"success": "user logged out"})
+	c.JSON(http.StatusOK, gin.H{"success": "user logged out"})
 }
