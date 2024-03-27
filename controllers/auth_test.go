@@ -3,7 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"io"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,11 +11,12 @@ import (
 
 	"maos-cloud-project-api/models"
 	"maos-cloud-project-api/responses"
+
+	// "maos-cloud-project-api/router"
 	"maos-cloud-project-api/utils"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -26,14 +27,15 @@ type User struct {
 	Role     string
 }
 
-// DatabaseTestSuite
-type DatabaseTestSuite struct {
+// AuthTestSuite
+type AuthTestSuite struct {
 	suite.Suite
 	router *gin.Engine
 }
 
-func (suite *DatabaseTestSuite) SetUpSuite() {
+func (suite *AuthTestSuite) SetUpSuite() {
 
+	suite.router = utils.SetUpRouter()
 	config := models.Config{
 		Host:     os.Getenv("DB_HOST"),
 		User:     os.Getenv("DB_USER"),
@@ -44,30 +46,55 @@ func (suite *DatabaseTestSuite) SetUpSuite() {
 	}
 
 	models.InitDB(config)
+
 }
 
-func (suite *DatabaseTestSuite) TestSignup() {
-
+func (suite *AuthTestSuite) TestSignup() {
+	
 	log.SetFormatter(&log.TextFormatter{})
-
-	w := httptest.NewRecorder()
+	
 	correctUser := models.User{
 		Name:     "test",
 		Email:    "test@gmail.com",
 		Password: "test1234",
 		Role:     "admin",
 	}
+	
+	// Test Case 1: Correct signup
+	w := httptest.NewRecorder()
 
 	jsonValue, _ := json.Marshal(correctUser)
 	req, _ := http.NewRequest("POST", "/signup", bytes.NewBuffer(jsonValue))
 	suite.router.ServeHTTP(w, req)
 	suite.Equal(http.StatusAccepted, w.Code)
+	suite.Equal("user created", w.Body.String())
 
-	var response responses.UserCreatedResponse
-	json.Unmarshal(w.Body.Bytes(), &response)
-	suite.Equal("user created", response.Message)
+	suite.T().Log("Test Case 1: Correct signup: ",w.Body.String())
 
-	log.Infof("Signup Response: %s", response.Message )
+	// Test Case 2: correct login
+	loginUser := models.User{
+		Name:     "test",
+		Password: "test1234",
+	}
+
+	jsonValue, _ = json.Marshal(loginUser)
+	req, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(jsonValue))
+	suite.router.ServeHTTP(w, req)
+	suite.Equal(http.StatusAccepted, w.Code)
+
+	suite.T().Log("Test Case 2: correct login: ",w.Body.String())
+
+	// Test Case 3: check dashboard
+	req, _ = http.NewRequest("GET", "/dashboard", nil)
+	w = httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+	suite.Equal(http.StatusAccepted, w.Code)
+	suite.Equal("admin", w.Body.String())
+	
+	suite.T().Log("Test Case 3: check dashboard: ",w.Body.String())
+
+	// Test Case 4: no email
+	w = httptest.NewRecorder()
 
 	noEmail := models.User{
 		Name:     "test",
@@ -79,45 +106,13 @@ func (suite *DatabaseTestSuite) TestSignup() {
 	req, _ = http.NewRequest("POST", "/signup", bytes.NewBuffer(jsonValue))
 	suite.router.ServeHTTP(w, req)
 	suite.Equal(http.StatusBadRequest, w.Code)
+	suite.Equal("email must be provided", w.Body.String())
 
-	var noEmailResponse responses.UserCreatedResponse
-	json.Unmarshal(w.Body.Bytes(), &noEmailResponse)
-	suite.Equal("email must be provided", noEmailResponse.Message)
-
-	loginUser := models.User{
-		Name:     "test",
-		Password: "test1234",
-	}
-
-	jsonValue, _ = json.Marshal(loginUser)
-	req, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(jsonValue))
-	suite.router.ServeHTTP(w, req)
-	suite.Equal(http.StatusAccepted, w.Code)
-
-}
-
-func TestDashboard(t *testing.T) {
-
-	mockUnAuthorizedResponse := `{"error":"unauthorized"}`
-
-	r := utils.SetUpRouter()
-	r.GET("/dashboard", Dashboard)
-	req, _ := http.NewRequest("GET", "/dashboard", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	responseData, _ := io.ReadAll(w.Body)
-	assert.Equal(t, mockUnAuthorizedResponse, string(responseData))
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	suite.T().Log("Test Case 4: no email: ",w.Body.String())
 
 }
 
 func TestServer(t *testing.T) {
-	suite.Run(t, new(DatabaseTestSuite))
+	suite.Run(t, new(AuthTestSuite))
 }
 
-// func (suite *DatabaseTestSuite) TestLogin() {
-// 	testUsers := []models.User{
-// 		{Name: "testuser", Email: "test@gmail.com",Password: "test1234", Role: "admin"},
-// 	}
-// }
