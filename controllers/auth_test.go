@@ -6,26 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"maos-cloud-project-api/models"
-	"maos-cloud-project-api/responses"
-
 	// "maos-cloud-project-api/router"
 	"maos-cloud-project-api/utils"
 
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 )
-
-type User struct {
-	Name     string
-	Email    string
-	Password string
-	Role     string
-}
 
 // AuthTestSuite
 type AuthTestSuite struct {
@@ -36,22 +25,12 @@ type AuthTestSuite struct {
 func (suite *AuthTestSuite) SetUpSuite() {
 
 	suite.router = utils.SetUpRouter()
-	config := models.Config{
-		Host:     os.Getenv("DB_HOST"),
-		User:     os.Getenv("DB_USER"),
-		Port:     os.Getenv("DB_PORT"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   os.Getenv("TEST_DB_NAME"),
-		SSLMode:  os.Getenv("SSL_MODE"),
-	}
-
-	models.InitDB(config)
+	// router.AuthRoutes(suite.router)
+	fmt.Println("Test Suite Setup")
 
 }
 
 func (suite *AuthTestSuite) TestSignup() {
-	
-	log.SetFormatter(&log.TextFormatter{})
 	
 	correctUser := models.User{
 		Name:     "test",
@@ -62,10 +41,15 @@ func (suite *AuthTestSuite) TestSignup() {
 	
 	// Test Case 1: Correct signup
 	w := httptest.NewRecorder()
-
 	jsonValue, _ := json.Marshal(correctUser)
+
+	if suite.router == nil {
+		suite.T().Fatal("Test Router not initialized")
+	}
+
 	req, _ := http.NewRequest("POST", "/signup", bytes.NewBuffer(jsonValue))
 	suite.router.ServeHTTP(w, req)
+	
 	suite.Equal(http.StatusAccepted, w.Code)
 	suite.Equal("user created", w.Body.String())
 

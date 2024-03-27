@@ -1,41 +1,26 @@
 package main
 
 import (
-	models "maos-cloud-project-api/models"
-	"maos-cloud-project-api/router"
-	utils "maos-cloud-project-api/utils"
-
-	gin "github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
-
-	"os"
 
 	"github.com/joho/godotenv"
+	utils "maos-cloud-project-api/utils"
+	"maos-cloud-project-api/router"
+	"github.com/sirupsen/logrus"
+
 )
 
 func main() {
 	utils.EnsurePlugins()
 	// utils.CreateAwsSession()
-	r := gin.Default()
+
+	logrus.Info("Env file not loaded. Exiting..." )
 
 	//load .env file
-	err := godotenv.Load()
+	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error Loading .env file")
+		logrus.Fatal("Env file not loaded. Exiting...", err )
 	}
-
-	config := models.Config{
-		Host:     os.Getenv("DB_HOST"),
-		User:     os.Getenv("DB_USER"),
-		Port:     os.Getenv("DB_PORT"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   os.Getenv("DB_NAME"),
-		SSLMode:  os.Getenv("SSL_MODE"),
-	}
-
-	models.InitDB(config)
-
-	//load routes
+	r := utils.SetUpRouter()
 	router.AuthRoutes(r)
 	r.Run(":8080")
 
