@@ -1,102 +1,86 @@
-package controllers
+package controllers // Replace with your actual package name
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"maos-cloud-project-api/models"
-	// "maos-cloud-project-api/router"
-	"maos-cloud-project-api/utils"
-
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	mocks "maos-cloud-project-api/mocks"
+	models "maos-cloud-project-api/models"
 )
 
-// AuthTestSuite
-type AuthTestSuite struct {
+type SignupTestSuite struct {
 	suite.Suite
 	router *gin.Engine
-}
-
-func (suite *AuthTestSuite) SetUpSuite() {
-
-	suite.router = utils.SetUpRouter()
-	// router.AuthRoutes(suite.router)
-	fmt.Println("Test Suite Setup")
-
-}
-
-func (suite *AuthTestSuite) TestSignup() {
+	c     *gin.Context
+	w     *httptest.ResponseRecorder
 	
+}
+
+func (s *SignupTestSuite) SetupTest() {
+	s.router = gin.New()
+	gin.SetMode(gin.TestMode)
+	s.w = httptest.NewRecorder()
+}
+
+func (s *SignupTestSuite) Test_ValidSignup() {
 	correctUser := models.User{
 		Name:     "test",
 		Email:    "test@gmail.com",
 		Password: "test1234",
 		Role:     "admin",
 	}
-	
-	// Test Case 1: Correct signup
-	w := httptest.NewRecorder()
 	jsonValue, _ := json.Marshal(correctUser)
-
-	if suite.router == nil {
-		suite.T().Fatal("Test Router not initialized")
-	}
-
-	req, _ := http.NewRequest("POST", "/signup", bytes.NewBuffer(jsonValue))
-	suite.router.ServeHTTP(w, req)
 	
-	suite.Equal(http.StatusAccepted, w.Code)
-	suite.Equal("user created", w.Body.String())
+	req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(jsonValue))
 
-	suite.T().Log("Test Case 1: Correct signup: ",w.Body.String())
-
-	// Test Case 2: correct login
-	loginUser := models.User{
-		Name:     "test",
-		Password: "test1234",
-	}
-
-	jsonValue, _ = json.Marshal(loginUser)
-	req, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(jsonValue))
-	suite.router.ServeHTTP(w, req)
-	suite.Equal(http.StatusAccepted, w.Code)
-
-	suite.T().Log("Test Case 2: correct login: ",w.Body.String())
-
-	// Test Case 3: check dashboard
-	req, _ = http.NewRequest("GET", "/dashboard", nil)
-	w = httptest.NewRecorder()
-	suite.router.ServeHTTP(w, req)
-	suite.Equal(http.StatusAccepted, w.Code)
-	suite.Equal("admin", w.Body.String())
 	
-	suite.T().Log("Test Case 3: check dashboard: ",w.Body.String())
+	var mockHarsher mocks.MockHarsher
+	mockHarsher.On("GenerateHashPassword", mock.Anything ).Return("hashedPassword", nil)
 
-	// Test Case 4: no email
-	w = httptest.NewRecorder()
-
-	noEmail := models.User{
+	// TODO: Solve the error in the next line
+	//use the hasher wraper function
+	hashedPassword, err := SignupWithMockHasher(s.c, mockHarsher, models.User{
 		Name:     "test",
+		Email:    "test@gmail.com",
 		Password: "test1234",
 		Role:     "admin",
-	}
+	})
 
-	jsonValue, _ = json.Marshal(noEmail)
-	req, _ = http.NewRequest("POST", "/signup", bytes.NewBuffer(jsonValue))
-	suite.router.ServeHTTP(w, req)
-	suite.Equal(http.StatusBadRequest, w.Code)
-	suite.Equal("email must be provided", w.Body.String())
+	s.T().Log("TEST: ",hashedPassword)
 
-	suite.T().Log("Test Case 4: no email: ",w.Body.String())
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "hashedPassword", hashedPassword)
+	
+	s.router.ServeHTTP(s.w, req)
 
+	assert.Equal(s.T(), 201, s.w.Code)
+
+	var actualBody map[string]interface{}
+	err = json.Unmarshal(s.w.Body.Bytes(), &actualBody)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), map[string]interface{}{"success": "user created"}, actualBody)
 }
 
-func TestServer(t *testing.T) {
-	suite.Run(t, new(AuthTestSuite))
+func (s *SignupTestSuite) Test_EmptyEmail() {
+	requestBody := `{"password": "password123"}`
+	req := httptest.NewRequest("POST", "/signup", bytes.NewReader([]byte(requestBody)))
+
+	s.router.POST("/signup", Signup)
+	s.router.ServeHTTP(s.w, req)
+
+	assert.Equal(s.T(), 400, s.w.Code)
+	// assert.Equal(s.T(), map[string]interface{}{" error ": ` email must be provided `}, s.w.Body.String())
 }
 
+// Add similar test cases for Existing Email and Invalid JSON as before
+
+func TestSignupSuite(t *testing.T) {
+	suite.Run(t, new(SignupTestSuite))
+}

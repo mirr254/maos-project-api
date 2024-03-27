@@ -9,9 +9,24 @@ import (
 
 	models "maos-cloud-project-api/models"
 	utils "maos-cloud-project-api/utils"
+	mocks "maos-cloud-project-api/mocks"
 
 	gin "github.com/gin-gonic/gin"
 )
+
+
+// SignupWithMockHasher is a wrapper function for testing Signup with a mock hasher
+func SignupWithMockHasher(c *gin.Context, hasher mocks.MockHarsher, user models.User) (string, error) {
+	hashedPassword, err := hasher.GenerateHashPassword(user.Password)
+	if err != nil {
+	  return "", err
+	}
+
+	user.Password = hashedPassword
+	Signup(c)
+
+	return hashedPassword, nil
+  }
 
 func Login(c *gin.Context) {
 
@@ -69,7 +84,8 @@ func Login(c *gin.Context) {
 	c.JSON(201, gin.H{"success": "user logged in"})
 }
 
-func Signup(c *gin.Context) {
+func Signup(c *gin.Context ) {
+
 	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {

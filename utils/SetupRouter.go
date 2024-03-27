@@ -1,19 +1,23 @@
 package utils
-import (
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 
-	log "github.com/sirupsen/logrus"
+import (
+	"maos-cloud-project-api/models"
+
+	"github.com/gin-gonic/gin"
 )
 
-func SetUpRouter() *gin.Engine{
-    router := gin.Default()
+func SetUpRouter() *gin.Engine {
 
-	//load .env file
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Fatal("Error Loading .env file")
-	}
+	r := gin.Default()
+	config := GetEnvVars()
 
-    return router
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+
+	models.InitDB(config)
+
+	return r
 }
