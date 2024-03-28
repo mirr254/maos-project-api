@@ -9,24 +9,13 @@ import (
 
 	models "maos-cloud-project-api/models"
 	utils "maos-cloud-project-api/utils"
-	mocks "maos-cloud-project-api/mocks"
 
 	gin "github.com/gin-gonic/gin"
 )
 
-
-// SignupWithMockHasher is a wrapper function for testing Signup with a mock hasher
-func SignupWithMockHasher(c *gin.Context, hasher mocks.MockHarsher, user models.User) (string, error) {
-	hashedPassword, err := hasher.GenerateHashPassword(user.Password)
-	if err != nil {
-	  return "", err
-	}
-
-	user.Password = hashedPassword
-	Signup(c)
-
-	return hashedPassword, nil
-  }
+type ErrorResponse struct {
+    Error string `json:"error"`
+}
 
 func Login(c *gin.Context) {
 
@@ -84,41 +73,42 @@ func Login(c *gin.Context) {
 	c.JSON(201, gin.H{"success": "user logged in"})
 }
 
-func Signup(c *gin.Context ) {
+func Signup(c *gin.Context) {
 
-	var user models.User
+    var user models.User
 
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
+    if err := c.ShouldBindJSON(&user); err != nil {
+        c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
+        return
+    }
 
-	// check for empty email
-	if email := user.Email; email == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "email must be provided"})
-		return
-	}
+    // Check for empty email
+    if user.Email == "" {
+        c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email must be provided"})
+        return
+    }
 
-	var existingUser models.User
+    var existingUser models.User
 
-	models.DB.Where("email = ?", user.Email).First(&existingUser)
+    models.DB.Where("email = ?", user.Email).First(&existingUser)
 
-	if existingUser.ID != 0 {
-		c.JSON( http.StatusConflict, gin.H{"error": "user already exists"})
-		return
-	}
+    if existingUser.ID != 0 {
+        c.JSON(http.StatusConflict, ErrorResponse{Error: "user already exists"})
+        return
+    }
 
-	var errHash error
-	user.Password, errHash = utils.GenerateHashPassword(user.Password)
+    hashedPassword, err := utils.GenerateHashPassword(user.Password)
 
-	if errHash != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate password hash"})
-		return
-	}
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not generate password hash"})
+        return
+    }
 
-	models.DB.Create(&user)
+    user.Password = hashedPassword
 
-	c.JSON(http.StatusCreated, gin.H{"success": "user created"})
+    models.DB.Create(&user)
+
+    c.JSON(http.StatusCreated, gin.H{"success": "user created"})
 }
 
 func ResetPassword(c *gin.Context) {
