@@ -75,7 +75,7 @@ func Login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -84,14 +84,14 @@ func Login(c *gin.Context) {
 	db.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID == 0 {
-		c.JSON(400, gin.H{"error": "user does not exist"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
 
 	errHash := utils.CompareHashPassword(user.Password, existingUser.Password)
 
 	if !errHash {
-		c.JSON(400, gin.H{"error": "invalid password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
 
@@ -123,7 +123,7 @@ func Login(c *gin.Context) {
 	}
 
 	c.SetCookie("token", tokenString, int(expirationTime.Unix()), "/", "localhost", false, true)
-	c.JSON(201, gin.H{"success": "user logged in"})
+	c.JSON(http.StatusOK, gin.H{"success": "user logged in"})
 }
 
 func ResetPassword(c *gin.Context) {
