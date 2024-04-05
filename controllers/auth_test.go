@@ -61,7 +61,7 @@ func (s *SignupTestSuite) prepareTestContext(userBody []byte) (*gin.Context, *ht
     w := httptest.NewRecorder()
 
     // Create a new HTTP request with the user body
-    req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(userBody))
+    req := httptest.NewRequest("POST", "/api/v1/signup", bytes.NewBuffer(userBody))
     req.Header.Add("Content-Type", "application/json")
 
     // Create a new gin context from the request
