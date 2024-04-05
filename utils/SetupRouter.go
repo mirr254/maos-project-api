@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"maos-cloud-project-api/models"
+	// "maos-cloud-project-api/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,15 +9,9 @@ import (
 func SetUpRouter() *gin.Engine {
 
 	r := gin.Default()
-	config := GetEnvVars()
+	// config := GetEnvVars()
 
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-
-	models.InitDB(config)
+	// models.InitDB(config)
 
 	return r
 }
