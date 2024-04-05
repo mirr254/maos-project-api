@@ -199,7 +199,7 @@ func (s *LoginTestSuite) Test_ValidLogin() {
 	assert.Contains(s.T(), w.Body.String(), "user logged in")
 }
 
-func (s *LoginTestSuite) Test_InvalidLogin() {
+func (s *LoginTestSuite) Test_InvalidEmailLogin() {
 
 	signupUser := map[string]interface{}{ 
 		"name":     "test",
@@ -221,6 +221,38 @@ func (s *LoginTestSuite) Test_InvalidLogin() {
 	loginBody, _ := json.Marshal(LoginUser)
 	s.T().Log("USER BODY REQ: ", bytes.NewBuffer(loginBody))
 
+	ctx, w = s.prepareTestContext(loginBody)
+	Login(ctx)
+
+	s.T().Log("RESPONSE BODY: ", w.Body.String())
+	assert.Equal(s.T(), http.StatusUnauthorized, w.Code)
+	assert.Contains(s.T(), w.Body.String(), "invalid username or password")
+
+}
+
+func (s *LoginTestSuite) Test_InvalidPasswordLogin() {
+
+	signupUser := map[string]interface{}{ 
+		"name":     "test",
+		"email":    "test@gmail.com",
+		"password": "plainPassword123", 
+		"role":     "admin", 
+	  }
+
+	userBody, _ := json.Marshal(signupUser)
+	s.T().Log("USER BODY REQ: ", bytes.NewBuffer(userBody))
+
+	ctx, w := s.prepareTestContext(userBody)
+	Signup(ctx)
+	s.T().Log("Signup RESPONSE BODY: ", w.Body.String())
+	
+	LoginUser := map[string]interface{}{
+		"email":    "test@gmail.com",
+		"password": "plainPassw",
+	}
+	loginBody, _ := json.Marshal(LoginUser)
+	s.T().Log("USER BODY REQ: ", bytes.NewBuffer(loginBody))
+		
 	ctx, w = s.prepareTestContext(loginBody)
 	Login(ctx)
 
