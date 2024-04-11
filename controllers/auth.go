@@ -6,6 +6,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
+	"github.com/asaskevich/govalidator"
 
 	models "maos-cloud-project-api/models"
 	utils "maos-cloud-project-api/utils"
@@ -37,6 +38,11 @@ func Signup(c *gin.Context) {
         c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email must be provided"})
         return
     }
+
+	if !govalidator.IsEmail(user.Email){
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid email address"})
+		return
+	}
 
     var existingUser models.User
 
