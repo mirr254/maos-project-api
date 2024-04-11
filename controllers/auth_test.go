@@ -111,6 +111,26 @@ func (s *SignupTestSuite) Test_EmptyEmail() {
 	assert.Contains(s.T(), w.Body.String(), "email must be provided")
 }
 
+func (s *SignupTestSuite) Test_InvalidEmail() {
+
+	user := map[string]interface{}{ 
+		"name":     "test",
+		"email":    "test.gmail.com",
+		"password": "plainPassword123", 
+		"role":     "admin",  
+	  }
+
+	userBody, _ := json.Marshal(user)
+	s.T().Log("USER BODY REQ: ", bytes.NewBuffer(userBody))
+
+	ctx, w := s.prepareTestContext(userBody)
+	Signup(ctx)
+
+	s.T().Log("RESPONSE BODY: ", w.Body.String())
+	assert.Equal(s.T(), http.StatusBadRequest, w.Code)
+	assert.Contains(s.T(), w.Body.String(), "invalid email address")
+}
+
 func TestSignupSuite(t *testing.T) {
 	suite.Run(t, new(SignupTestSuite))
 }
