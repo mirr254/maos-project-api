@@ -1,16 +1,18 @@
 package router
 
 import (
-	controllers "maos-cloud-project-api/controllers"
-	"maos-cloud-project-api/middlewares"
+    "maos-cloud-project-api/controllers"
+    "maos-cloud-project-api/middlewares"
 
-	"github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin"
 )
 
 func AuthRoutes(r *gin.Engine) {
-	r.POST("/login", controllers.Login)
-	r.POST("/signup", controllers.Signup)
-	r.GET("/dashboard",middlewares.IsAuthorized(), controllers.Dashboard)
-	r.GET("/logout", controllers.Logout)
-	r.POST("/resetpassword", controllers.ResetPassword)
+    v1 := r.Group("/api/v1")
+
+    v1.POST("/login", controllers.Login)
+    v1.POST("/signup", controllers.Signup)
+    v1.GET("/dashboard",middlewares.IsAuthorized(), controllers.Dashboard)
+    v1.GET("/logout", controllers.Logout)
+    v1.POST("/resetpassword", controllers.ResetPassword)
 }

@@ -3,9 +3,9 @@ package models
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -17,22 +17,26 @@ type Config struct {
 	SSLMode  string
 }
 
-var DB *gorm.DB
+// var DB *gorm.DB
 
-func InitDB(cfg Config) {
+func InitDB(cfg Config) ( *gorm.DB, error){
 
 	dsn := fmt.Sprintf("host=%s user=%s port=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.User, cfg.Port, cfg.Password, cfg.DBName, cfg.SSLMode)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		panic(err)
+		// panic(err)
+		return nil, err
 	}
 	if err := db.AutoMigrate(&User{}); err != nil {
-		panic(err)
+		// panic(err)
+		return nil, err
 	}
 
 
 	log.Info("Database Migration successful")
 
-	DB = db
+	// DB = db
+
+	return db, nil
 }
