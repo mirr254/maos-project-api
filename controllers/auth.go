@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -12,28 +13,85 @@ import (
 	gin "github.com/gin-gonic/gin"
 )
 
+type ErrorResponse struct {
+    Error string `json:"error"`
+}
+
+func Signup(c *gin.Context) {
+
+    var user models.User
+	config := utils.GetEnvVars()
+	db, err := models.InitDB(config)
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+
+    if err := c.ShouldBindJSON(&user); err != nil {
+        c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid request"})
+        return
+    }
+
+    // Check for empty email
+    if user.Email == "" {
+        c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email must be provided"})
+        return
+    }
+
+    var existingUser models.User
+
+
+    db.Where("email = ?", user.Email).First(&existingUser)
+
+    if existingUser.ID != 0 {
+        c.JSON(http.StatusConflict, ErrorResponse{Error: "user already exists"})
+        return
+    }
+
+    hashedPassword, err := utils.GenerateHashPassword(user.Password)
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not generate password hash"})
+        return
+    }
+
+    user.Password = hashedPassword
+
+    db.Create(&user)
+
+    c.JSON(http.StatusCreated, gin.H{"success": "user created"})
+	
+	return 
+}
+
 func Login(c *gin.Context) {
 
 	var user models.User
+	config := utils.GetEnvVars()
+	db, err := models.InitDB(config)
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 
 	var existingUser models.User
 
-	models.DB.Where("email = ?", user.Email).First(&existingUser)
+	db.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID == 0 {
-		c.JSON(400, gin.H{"error": "user does not exist"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
 
 	errHash := utils.CompareHashPassword(user.Password, existingUser.Password)
 
 	if !errHash {
-		c.JSON(400, gin.H{"error": "invalid password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
 
@@ -65,43 +123,19 @@ func Login(c *gin.Context) {
 	}
 
 	c.SetCookie("token", tokenString, int(expirationTime.Unix()), "/", "localhost", false, true)
-	c.JSON(200, gin.H{"success": "user logged in"})
-}
-
-func Signup(c *gin.Context) {
-	var user models.User
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	var existingUser models.User
-
-	models.DB.Where("email = ?", user.Email).First(&existingUser)
-
-	if existingUser.ID != 0 {
-		c.JSON(400, gin.H{"error": "user already exists"})
-		return
-	}
-
-	var errHash error
-	user.Password, errHash = utils.GenerateHashPassword(user.Password)
-
-	if errHash != nil {
-		c.JSON(500, gin.H{"error": "could not generate password hash"})
-		return
-	}
-
-	models.DB.Create(&user)
-
-	c.JSON(200, gin.H{"success": "user created"})
+	c.JSON(http.StatusOK, gin.H{"success": "user logged in"})
 }
 
 func ResetPassword(c *gin.Context) {
 
 	var user models.User
 
+	config := utils.GetEnvVars()
+	db, err := models.InitDB(config)
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
@@ -109,7 +143,8 @@ func ResetPassword(c *gin.Context) {
 
 	var existingUser models.User
 
-	models.DB.Where("email = ?", user.Email).First(&existingUser)
+	db.Where("email = ?", user.Email).First(&existingUser)
+	// models.DB.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID == 0 {
 		c.JSON(400, gin.H{"error": "user does not exist"})
@@ -124,36 +159,36 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	models.DB.Model(&existingUser).Update("password", user.Password)
+	db.Model(&existingUser).Update("password", user.Password)
 
-	c.JSON(200, gin.H{"success": "password updated"})
+	c.JSON(http.StatusOK, gin.H{"success": "password updated"})
 }
 
 func Dashboard(c *gin.Context) {
 
 	cookie, err := c.Cookie("token")
 	if err != nil {
-		c.JSON(401, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	claims, err := utils.ParseToken(cookie)
 	if err != nil {
 		logrus.Error(err)
-		c.JSON(401, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	if claims.Role != "admin" {
-		c.JSON(401, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	c.JSON(200, gin.H{"success": "dashboard", "role": claims.Role})
+	c.JSON(http.StatusOK, gin.H{"success": "customer dashboard", "role": claims.Role})
 
 }
 
 func Logout(c *gin.Context) {
 	c.SetCookie("token", "", -1, "/", "localhost", false, true)
-	c.JSON(200, gin.H{"success": "user logged out"})
+	c.JSON(http.StatusOK, gin.H{"success": "user logged out"})
 }
