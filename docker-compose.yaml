@@ -12,6 +12,12 @@ services:
     restart: always
     networks:
       - maos-cloud-network
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+    networks:
+      - maos-cloud-network
 networks:
   maos-cloud-network:
     driver: bridge

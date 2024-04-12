@@ -3,10 +3,12 @@ package controllers
 import (
 	"net/http"
 	"time"
+	"os"
+	"fmt"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/sirupsen/logrus"
-	"github.com/asaskevich/govalidator"
 
 	models "maos-cloud-project-api/models"
 	utils "maos-cloud-project-api/utils"
@@ -17,14 +19,34 @@ import (
 type ErrorResponse struct {
     Error string `json:"error"`
 }
+func getBaseUrl() string {
+	baseUrl := os.Getenv("BASE_URL")
+	if baseUrl == "" {
+		//provide a default if not specified/localhost
+		baseUrl = "http://localhost:8080"
+	}
+	return baseUrl
+}
+func createVerificationLink(email_token string) string {
+	baseUrl := getBaseUrl()
+	return fmt.Sprintf("%s/api/v1/verify-email?token=%s", baseUrl, email_token)
+}
 
 func Signup(c *gin.Context) {
 
     var user models.User
 	config := utils.GetEnvVars()
+
+	email_verification_token, err := utils.GenerateToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not generate token"})
+		return
+	}
+	
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
+		logrus.Error(err)
 		panic(err)
 	}
 
@@ -62,12 +84,65 @@ func Signup(c *gin.Context) {
     }
 
     user.Password = hashedPassword
+	user.EmailVerificationToken = email_verification_token
+	user.IsEmailVerified = false
 
     db.Create(&user)
 
+	// Send email verification link
+	subject := "Email Verification"
+	body := "Click the link below to verify your email\n\n" + createVerificationLink(email_verification_token)
+	emailSendStatusChan := make(chan string)
+	go func ()  {
+		
+		err = utils.SendEmail(user.Email, subject, body)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
+			emailSendStatusChan <- fmt.Sprintf("Error sending email: %v", err)
+			logrus.Error(err)
+			return
+		}
+		logrus.Info("Email sent")
+		emailSendStatusChan <- "Email sent"
+	}()
+
     c.JSON(http.StatusCreated, gin.H{"success": "user created"})
+
+	logrus.Info("Email Status: ", <-emailSendStatusChan) //block until goroutine sends email status
 	
 	return 
+}
+
+func VerifyEmail(c *gin.Context) {
+
+	var user models.User
+	config := utils.GetEnvVars()
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid token"})
+		return
+	}
+
+	db, err := models.InitDB(config)
+	if err != nil {
+		// Handle error
+		logrus.Error(err)
+		panic(err)
+	}
+	db.Where("email_verification_token = ?", token).First(&user)
+
+	if user.ID == 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid token"})
+		return
+	}
+
+	user.IsEmailVerified = true
+	db.Save(&user)
+
+	// Redirect to a success page
+	c.JSON(http.StatusOK, gin.H{"success": "Email verified"})
+
+	http.Redirect(c.Writer, c.Request, "/api/v1/dashboard", http.StatusSeeOther)
 }
 
 func Login(c *gin.Context) {
