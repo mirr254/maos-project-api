@@ -21,16 +21,24 @@ func SendEmail(toEmail, subject string, body string) error {
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := os.Getenv("SMTP_PORT")
 
-	logrus.Info("SMTP_HOST: ", smtpHost)
+	logrus.Info("DETAILS: ", smtpHost, smtpPort, from, pass, toEmail, subject, body)
 
 	message := []byte("To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"\r\n" +
 		body + "\r\n")
 
-	auth := smtp.PlainAuth("", from, pass, smtpHost)
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	var auth smtp.Auth
+	if pass != "" {
+		auth = smtp.PlainAuth("", from, pass, smtpHost)
+	}
 
-	return err
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	if err != nil {
+		logrus.Error("Error sending email: ", err)
+		return err
+	}
+
+	return nil
 
 }
