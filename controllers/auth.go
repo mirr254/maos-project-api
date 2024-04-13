@@ -92,24 +92,21 @@ func Signup(c *gin.Context) {
 	// Send email verification link
 	subject := "Email Verification"
 	body := "Click the link below to verify your email\n\n" + createVerificationLink(email_verification_token)
-	emailSendStatusChan := make(chan string)
+	emailSendStatusChan := make(chan error)
 	go func ()  {
 		
-		err = utils.SendEmail(user.Email, subject, body)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
-			emailSendStatusChan <- fmt.Sprintf("Error sending email: %v", err)
-			logrus.Error(err)
-			return
-		}
-		logrus.Info("Email sent")
-		emailSendStatusChan <- "Email sent"
+		err := utils.SendEmail(user.Email, subject, body)
+		emailSendStatusChan <- err
 	}()
+	err = <-emailSendStatusChan
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
+		logrus.Error("Error sending email: ", err)
+		return
+	}
+	logrus.Info("Email sent")
 
     c.JSON(http.StatusCreated, gin.H{"success": "user created"})
-
-	logrus.Info("Email Status: ", <-emailSendStatusChan) //block until goroutine sends email status
-	
 	return 
 }
 

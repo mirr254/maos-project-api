@@ -3,6 +3,8 @@ package utils
 import (
 	"net/smtp"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -12,11 +14,14 @@ SendEmail Sends an email to the user(toEmail)
 */
 func SendEmail(toEmail, subject string, body string) error {
 
-	from := os.Getenv("EMAIL")
+	
+	from := os.Getenv("FROM_EMAIL")
 	pass := os.Getenv("EMAIL_PASSWORD")
 	to := []string{toEmail}
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := os.Getenv("SMTP_PORT")
+
+	logrus.Info("SMTP_HOST: ", smtpHost)
 
 	message := []byte("To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
