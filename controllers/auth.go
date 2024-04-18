@@ -2,9 +2,8 @@ package controllers
 
 import (
 	"net/http"
-	"time"
 	"os"
-	"fmt"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/dgrijalva/jwt-go"
@@ -16,26 +15,18 @@ import (
 	gin "github.com/gin-gonic/gin"
 )
 
+var smtpHost = os.Getenv("SMTP_HOST")
+var smtpPort = os.Getenv("SMTP_PORT")
+var from = os.Getenv("FROM_EMAIL")
+var pass = os.Getenv("EMAIL_PASSWORD")
+
 type ErrorResponse struct {
     Error string `json:"error"`
-}
-func getBaseUrl() string {
-	baseUrl := os.Getenv("BASE_URL")
-	if baseUrl == "" {
-		//provide a default if not specified/localhost
-		baseUrl = "http://localhost:8080"
-	}
-	return baseUrl
-}
-func createVerificationLink(email_token string) string {
-	baseUrl := getBaseUrl()
-	return fmt.Sprintf("%s/api/v1/verify-email?token=%s", baseUrl, email_token)
 }
 
 func Signup(c *gin.Context) {
 
     var user models.User
-	config := utils.GetEnvVars()
 
 	email_verification_token, err := utils.GenerateToken()
 	if err != nil {
@@ -43,7 +34,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 	
-	db, err := models.InitDB(config)
+	db, err := models.InitDB()
 	if err != nil {
 		// Handle error
 		logrus.Error(err)
@@ -91,36 +82,99 @@ func Signup(c *gin.Context) {
 
 	// Send email verification link
 	subject := "Email Verification"
-	body := "Click the link below to verify your email\n\n" + createVerificationLink(email_verification_token)
+	body := "Click the link below to verify your email\n\n" + utils.CreateVerificationLink(email_verification_token)
 	emailSendStatusChan := make(chan error)
 	go func ()  {
 		
-		err := utils.SendEmail(user.Email, subject, body)
+		err := utils.SendEmail(smtpHost, smtpPort, from, pass,user.Email, subject, body)
 		emailSendStatusChan <- err
 	}()
-	err = <-emailSendStatusChan
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
-		logrus.Error("Error sending email: ", err)
-		return
-	}
-	logrus.Info("Email sent")
+	// TODO: Handle email sending error
+	// err = <-emailSendStatusChan
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
+	// 	logrus.Error("Error sending email: ", err)
+	// 	return
+	// }
+	// logrus.Info("Email sent")
 
     c.JSON(http.StatusCreated, gin.H{"success": "user created"})
 	return 
 }
 
+func SendEmailVerification(emailSender utils.EmailSender) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var user models.User
+		db, err := models.InitDB()
+
+		if err != nil {
+			// Handle error
+			logrus.Error(err)
+			panic(err)
+		}
+
+		//get current user
+		currentUser := c.MustGet("user").(models.User)
+
+		//get user email
+		userEmail := currentUser.Email
+
+		//check if user is already verified
+		if currentUser.IsEmailVerified {
+			c.JSON(http.StatusBadRequest, ErrorResponse{Error: "email already verified"})
+			return
+		}
+
+		// check if user is logged in
+		cookie, err := c.Cookie("token")
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		_, err = utils.ParseToken(cookie)
+		if err != nil {
+			logrus.Error(err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+
+		//generate token
+		email_verification_token, err := utils.GenerateToken()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not generate token"})
+			return
+		}
+
+		//save token to user
+		user.EmailVerificationToken = email_verification_token
+
+		//update user
+		db.Model(&currentUser).Update("email_verification_token", email_verification_token)
+		//send email
+		// Send email verification link
+		subject := "Email Verification"
+		body := "Click the link below to verify your email\n\n" + utils.CreateVerificationLink(email_verification_token)
+		emailSendStatusChan := make(chan error)
+		func () {
+			err := emailSender.SendEmail(smtpHost, smtpPort, from, pass,userEmail, subject, body)
+			emailSendStatusChan <- err
+		}()
+		
+		c.JSON(http.StatusOK, gin.H{"success": "email verification link sent"})
+	}
+}
+
 func VerifyEmail(c *gin.Context) {
 
 	var user models.User
-	config := utils.GetEnvVars()
 	token := c.Query("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid token"})
 		return
 	}
 
-	db, err := models.InitDB(config)
+	db, err := models.InitDB()
 	if err != nil {
 		// Handle error
 		logrus.Error(err)
@@ -139,14 +193,13 @@ func VerifyEmail(c *gin.Context) {
 	// Redirect to a success page
 	c.JSON(http.StatusOK, gin.H{"success": "Email verified"})
 
-	http.Redirect(c.Writer, c.Request, "/api/v1/dashboard", http.StatusSeeOther)
+	// http.Redirect(c.Writer, c.Request, "/api/v1/dashboard", http.StatusSeeOther)
 }
 
 func Login(c *gin.Context) {
 
 	var user models.User
-	config := utils.GetEnvVars()
-	db, err := models.InitDB(config)
+	db, err := models.InitDB()
 	if err != nil {
 		// Handle error
 		panic(err)
@@ -208,8 +261,7 @@ func ResetPassword(c *gin.Context) {
 
 	var user models.User
 
-	config := utils.GetEnvVars()
-	db, err := models.InitDB(config)
+	db, err := models.InitDB()
 	if err != nil {
 		// Handle error
 		panic(err)
