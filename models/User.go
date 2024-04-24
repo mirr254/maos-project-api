@@ -12,4 +12,5 @@ type User struct {
 	Role                 string    `json:"role"`
 	IsEmailVerified      bool      `json:"is_email_verified"`
 	EmailVerificationToken string    `json:"email_verification_token"`
+	ResetPasswordToken   string    `json:"reset_password_token"`
 }

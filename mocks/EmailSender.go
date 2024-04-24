@@ -10,7 +10,7 @@ type MockEmailSender struct {
 	mock.Mock
 }
 
-func (m *MockEmailSender) SendEmail(smtpHost, smtpPort, from, pass, toEmail, subject, body string) error {
-	args := m.Called(smtpHost, smtpPort, from, pass, toEmail, subject, body)
+func (m *MockEmailSender) SendEmail( toEmail, subject, body string) error {
+	args := m.Called( toEmail, subject, body)
 	return args.Error(0)
 }

@@ -9,14 +9,14 @@ import (
 )
 
 type EmailSender interface {
-	SendEmail(smtpHost, smtpPort, from, pass, toEmail, subject, body string) error
+	SendEmail( toEmail, subject, body string) error
 }
 
 type SMTPSender struct {}
 
-func (s *SMTPSender) SendEmail(smtpHost, smtpPort, from, pass, toEmail, subject, body string) error {
+func (s *SMTPSender) SendEmail( toEmail, subject, body string) error {
 
-	return SendEmail(smtpHost, smtpPort, from, pass, toEmail, subject, body)
+	return SendEmail( toEmail, subject, body)
 }
 
 /*
@@ -24,10 +24,13 @@ SendEmail Sends an email to the user(toEmail)
    args: toEmail, subject, body
    returns: error
 */
-func SendEmail(smtpHost, smtpPort, from, pass, toEmail, subject, body string) error {
+func SendEmail( toEmail, subject, body string) error {
 
-	logrus.Info("DETAILS: ", smtpHost, smtpPort, from, pass, toEmail, subject, body)
-	
+	smtpHost := os.Getenv("SMTP_HOST")
+    smtpPort := os.Getenv("SMTP_PORT")
+    from     := os.Getenv("FROM_EMAIL")
+    pass     := os.Getenv("EMAIL_PASSWORD")
+
 	to := []string{toEmail}
 	message := []byte("To: " + toEmail + "\r\n" +
 		"Subject: " + subject + "\r\n" +
@@ -44,6 +47,7 @@ func SendEmail(smtpHost, smtpPort, from, pass, toEmail, subject, body string) er
 		logrus.Error("Error sending email: ", err)
 		return err
 	}
+	logrus.Info("EMAIL INFO: Email Sent")
 
 	return nil
 
@@ -57,7 +61,7 @@ func getBaseUrl() string {
 	}
 	return baseUrl
 }
-func CreateVerificationLink(email_token string) string {
+func CreateVerificationLink(route, email_token string) string {
 	baseUrl := getBaseUrl()
-	return fmt.Sprintf("%s/api/v1/verify-email?token=%s", baseUrl, email_token)
+	return fmt.Sprintf("%s/api/v1/%s?token=%s", baseUrl, route ,email_token)
 }
