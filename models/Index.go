@@ -3,25 +3,16 @@ package models
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"os"
 )
 
-type Config struct {
-	Host     string
-	User     string
-	Port     string
-	Password string
-	DBName   string
-	SSLMode  string
-}
+func InitDB() ( *gorm.DB, error){
 
-// var DB *gorm.DB
-
-func InitDB(cfg Config) ( *gorm.DB, error){
-
-	dsn := fmt.Sprintf("host=%s user=%s port=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.User, cfg.Port, cfg.Password, cfg.DBName, cfg.SSLMode)
+	dsn := fmt.Sprintf("host=%s user=%s port=%s password=%s dbname=%s sslmode=%s", 
+	         os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB_PORT") ,os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_SSL_MODE"))
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -34,7 +25,7 @@ func InitDB(cfg Config) ( *gorm.DB, error){
 	}
 
 
-	log.Info("Database Migration successful")
+	logrus.Info("Database Migration successful")
 
 	// DB = db
 
