@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -17,7 +15,8 @@ import (
 	// "maos-cloud-project-api/controllers"
 	utils "maos-cloud-project-api/utils"
 
-	models "maos-cloud-project-api/models"
+	"maos-cloud-project-api/mocks"
+	"maos-cloud-project-api/models"
 )
 
 
@@ -32,13 +31,7 @@ type SignupTestSuite struct {
 
 func (s *SignupTestSuite) SetupTest() {
 
-	err := godotenv.Load()
-    if err != nil {
-        logrus.Fatal("Env file not loaded. Exiting...", err)
-    }
-
-	config := utils.GetEnvVars()
-	db, err := models.InitDB(config)
+	db, err := models.InitDB()
 	if err != nil {
 		// Handle error
 		s.T().Fatal("Error initializing database connection")
@@ -152,13 +145,7 @@ type LoginTestSuite struct {
 
 func (s *LoginTestSuite) SetupTest() {
 	
-	err := godotenv.Load()
-	if err != nil {
-		logrus.Fatal("Env file not loaded. Exiting...", err)
-	}
-
-	config := utils.GetEnvVars()
-	db, err := models.InitDB(config)
+	db, err := models.InitDB()
 	if err != nil {
 		// Handle error
 		s.T().Fatal("Error initializing database connection")
@@ -214,7 +201,7 @@ func (s *LoginTestSuite) Test_ValidLogin() {
 	ctx, w = s.prepareTestContext(loginBody)
 	Login(ctx)
 
-	s.T().Log("RESPONSE BODY: ", w.Body.String())
+	s.T().Log("Login RESPONSE BODY: ", w.Body.String())
 	assert.Equal(s.T(), http.StatusOK, w.Code)
 	assert.Contains(s.T(), w.Body.String(), "user logged in")
 }
@@ -289,6 +276,68 @@ func TestLoginSuite(t *testing.T) {
 func (s *LoginTestSuite) TearDownSuite() {
 
 	s.db.Exec("DROP TABLE users")
+	s.T().Log("TearDownSuite")
+
+}
+
+type EmailVerficationLinkTestSuite struct {
+	suite.Suite
+	router          *gin.Engine
+	mockEmailSender *mocks.MockEmailSender
+	user            models.User
+}
+
+func (suite *EmailVerficationLinkTestSuite) SetupTest() {
+	suite.router = utils.SetUpRouter()
+	suite.mockEmailSender = new(mocks.MockEmailSender)
+
+	suite.user = models.User{
+		Email:    "test@email.com",
+		IsEmailVerified: false,
+		EmailVerificationToken: "",
+	}
+
+	//set up the route with the mock email sender
+	suite.router.POST("/api/v1/send-verification-email", func(c *gin.Context) {
+		c.Set("user", suite.user)
+		SendEmailVerification(suite.mockEmailSender)(c)
+	})
+}
+
+func (suite *EmailVerficationLinkTestSuite) Test_SendEmailVerificationLinkSuccess() {
+	suite.user.IsEmailVerified = false
+	token := "testtoken"
+
+	subject := "Email Verification"
+	body := "Click the link below to verify your email\n" + "http://localhost:8080/api/v1/verify-email?token=" + token
+	suite.mockEmailSender.On("SendEmail", "localhost", "1025","from@example.com","", suite.user.Email, subject, body).Return(nil)
+
+	reqBody, _ := json.Marshal(map[string]string{"email": suite.user.Email})
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/send-verification-email", bytes.NewBuffer(reqBody))
+	resp := httptest.NewRecorder()
+	suite.router.ServeHTTP(resp, req)
+
+	suite.Equal(http.StatusOK, resp.Code)
+	suite.mockEmailSender.AssertExpectations(suite.T())
+
+}
+
+// func (suite *EmailVerficationLinkTestSuite) Test_SendEmailVerificationAlreadyVerified(){
+// 	suite.user.IsEmailVerified = true
+// 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/send-verification-email", nil)
+// 	resp := httptest.NewRecorder()
+// 	suite.router.ServeHTTP(resp, req)
+
+// 	suite.Equal(http.StatusBadRequest, resp.Code)
+// }
+
+func TestEmailVerficationLinkTestSuite(t *testing.T) {
+	suite.Run(t, new(EmailVerficationLinkTestSuite))
+}
+
+func (s *EmailVerficationLinkTestSuite) TearDownSuite() {
+
+	// s.db.Exec("DROP TABLE users")
 	s.T().Log("TearDownSuite")
 
 }
