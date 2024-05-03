@@ -47,8 +47,7 @@ func SendEmail( toEmail, subject, body string) error {
 		logrus.Error("Error sending email: ", err)
 		return err
 	}
-	logrus.Info("EMAIL INFO: Email Sent")
-
+	
 	return nil
 
 }

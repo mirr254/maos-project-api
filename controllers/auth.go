@@ -85,13 +85,12 @@ func Signup(c *gin.Context) {
 		emailSendStatusChan <- err
 	}()
 	// TODO: Handle email sending error
-	// err = <-emailSendStatusChan
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
-	// 	logrus.Error("Error sending email: ", err)
-	// 	return
-	// }
-	// logrus.Info("Email sent")
+	err = <-emailSendStatusChan
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "could not send email"})
+		logrus.Error("Error sending email: ", err)
+		return
+	}
 
     c.JSON(http.StatusCreated, gin.H{"success": "user created"})
 	return 
