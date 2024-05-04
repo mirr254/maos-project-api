@@ -20,6 +20,8 @@ import (
 )
 
 
+
+
 type SignupTestSuite struct {
 	suite.Suite
 	router *gin.Engine
@@ -31,7 +33,7 @@ type SignupTestSuite struct {
 
 func (s *SignupTestSuite) SetupTest() {
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		s.T().Fatal("Error initializing database connection")
@@ -145,7 +147,7 @@ type LoginTestSuite struct {
 
 func (s *LoginTestSuite) SetupTest() {
 	
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		s.T().Fatal("Error initializing database connection")
@@ -185,11 +187,10 @@ func (s *LoginTestSuite) Test_ValidLogin() {
 		"role":     "admin", 
 	  }
 	userBody, _ := json.Marshal(signupUser)
-	s.T().Log("USER BODY REQ: ", bytes.NewBuffer(userBody))
 
 	ctx, w := s.prepareTestContext(userBody)
 	Signup(ctx)
-	s.T().Log("Signup RESPONSE BODY: ", w.Body.String())
+	s.T().Log("LOGIN_SUITE: Signup RESPONSE BODY: ", w.Body.String())
 
 	loginUser := map[string]interface{}{	
 		"email":    "test@gmail.com",
@@ -283,39 +284,110 @@ func (s *LoginTestSuite) TearDownSuite() {
 type EmailVerficationLinkTestSuite struct {
 	suite.Suite
 	router          *gin.Engine
+	db 			    *gorm.DB
+	w               *httptest.ResponseRecorder
+	c               *gin.Context
 	mockEmailSender *mocks.MockEmailSender
-	user            models.User
 }
 
-func (suite *EmailVerficationLinkTestSuite) SetupTest() {
-	suite.router = utils.SetUpRouter()
-	suite.mockEmailSender = new(mocks.MockEmailSender)
+func (s *EmailVerficationLinkTestSuite) prepareTestContext(userBody []byte) (*gin.Context, *httptest.ResponseRecorder) {
+	// Initialize the response recorder
+	w := httptest.NewRecorder()
 
-	suite.user = models.User{
-		Email:    "test@email.com",
-		IsEmailVerified: false,
-		EmailVerificationToken: "",
+	// Create a new HTTP request with the user body
+	req := httptest.NewRequest("POST", "/api/v1/send-verification-email", bytes.NewBuffer(userBody))
+	req.Header.Add("Content-Type", "application/json")
+
+	// Create a new gin context from the request
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+
+	return c, w
+}
+
+func (s *EmailVerficationLinkTestSuite) SetupTest() {
+
+	db, err := models.InitDB(config)
+	if err != nil {
+		// Handle error
+		s.T().Fatal("Error initializing database connection")
 	}
+	db.AutoMigrate(&models.User{})
+	s.mockEmailSender = new(mocks.MockEmailSender)
 
-	//set up the route with the mock email sender
-	suite.router.POST("/api/v1/send-verification-email", func(c *gin.Context) {
-		c.Set("user", suite.user)
-		SendEmailVerification(suite.mockEmailSender)(c)
+	s.router = utils.SetUpRouter()
+	s.router.POST("/api/v1/send-verification-email", func(c *gin.Context) {
+		SendEmailVerificationLink(s.mockEmailSender)(c)
 	})
+	s.db = db
+
+	s.w = httptest.NewRecorder()
+	s.c, _ = gin.CreateTestContext(s.w)
+
 }
 
 func (suite *EmailVerficationLinkTestSuite) Test_SendEmailVerificationLinkSuccess() {
-	suite.user.IsEmailVerified = false
-	token := "testtoken"
+
+	signupUser := map[string]interface{}{ 
+		"name":     "test",
+		"email":    "test@gmail.com",
+		"password": "plainPassword123", 
+		"role":     "admin", 
+	  }
+	userBody, _ := json.Marshal(signupUser)
+
+	ctx, w := suite.prepareTestContext(userBody)
+	Signup(ctx)
+	suite.T().Log("EMAIL_VERIFICATION_LINK_SUITE: Signup RESPONSE BODY: ", w.Body.String())
+
+	loginUser := map[string]interface{}{	
+		"email":    "test@gmail.com",
+		"password": "plainPassword123",
+	}
+	loginBody, _ := json.Marshal(loginUser)
+
+	ctx, w = suite.prepareTestContext(loginBody)
+	Login(ctx)
+
+	var token string
+	cookies := w.Result().Cookies()
+	for _, cookie := range cookies {
+		if cookie.Name == "token" {
+			token = cookie.Value
+			break
+		}
+	}
+
+	if token == "" {
+		suite.T().Fatal("Token not found in cookies")
+	}
+	
+	// parsedBody := make(map[string]interface{})
+	// json.Unmarshal(w.Body.Bytes(), &parsedBody)
+	// // email := parsedBody["email"]
+
+	
+	suite.T().Log("EMAIL_VERIFICATION_LINK_SUITE Login RESPONSE BODY: ", w.Body.String())
 
 	subject := "Email Verification"
 	body := "Click the link below to verify your email\n" + "http://localhost:8080/api/v1/verify-email?token=" + token
-	suite.mockEmailSender.On("SendEmail", "localhost", "1025","from@example.com","", suite.user.Email, subject, body).Return(nil)
+	suite.mockEmailSender.On("SendEmail","test@gmail.com", subject, body).Return(nil)
 
-	reqBody, _ := json.Marshal(map[string]string{"email": suite.user.Email})
-	req, _ := http.NewRequest(http.MethodPost, "/api/v1/send-verification-email", bytes.NewBuffer(reqBody))
+	emailPayload := map[string]string{
+		"email": "test@gmail.com",
+	}
+	emailBody, err := json.Marshal(emailPayload)
+	if err != nil {
+		suite.T().Fatal("Failed to marshal JSON:", err)
+	}
+	
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/send-verification-email", bytes.NewBuffer(emailBody))
+	req.AddCookie(&http.Cookie{Name: "token", Value: token})
+
 	resp := httptest.NewRecorder()
 	suite.router.ServeHTTP(resp, req)
+
+	suite.T().Error("EMAIL_VERIFICATION_LINK_SUITE RESPONSE BODY: ", resp.Body.String())
 
 	suite.Equal(http.StatusOK, resp.Code)
 	suite.mockEmailSender.AssertExpectations(suite.T())

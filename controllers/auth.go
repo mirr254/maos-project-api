@@ -14,6 +14,8 @@ import (
 	gin "github.com/gin-gonic/gin"
 )
 
+var config = utils.GetEnvVars()
+
 type ErrorResponse struct {
     Error string `json:"error"`
 }
@@ -28,7 +30,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 	
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		logrus.Error(err)
@@ -96,7 +98,7 @@ func Signup(c *gin.Context) {
 	return 
 }
 
-func SendEmailVerification(emailSender utils.EmailSender) gin.HandlerFunc {
+func SendEmailVerificationLink(emailSender utils.EmailSender) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		
 		var user models.User
@@ -115,7 +117,7 @@ func SendEmailVerification(emailSender utils.EmailSender) gin.HandlerFunc {
 			return
 		}
 
-		db, err := models.InitDB()
+		db, err := models.InitDB(config)
 		if err != nil {
 			// Handle error
 			logrus.Error(err)
@@ -177,7 +179,7 @@ func VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		logrus.Error(err)
@@ -202,7 +204,7 @@ func VerifyEmail(c *gin.Context) {
 func Login(c *gin.Context) {
 
 	var user models.User
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		panic(err)
@@ -265,7 +267,7 @@ func ResetPassword( emailSender utils.EmailSender  )  gin.HandlerFunc {
 
 	var user models.User
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		panic(err)
@@ -321,7 +323,7 @@ func UpdatePassword(c *gin.Context) {
 	
 	var user models.User
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		panic(err)
