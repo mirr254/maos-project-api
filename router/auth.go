@@ -30,6 +30,6 @@ func AuthRoutes(r *gin.Engine) {
     v1.GET("/logout", controllers.Logout)
     v1.POST("/resetpassword", controllers.ResetPassword(emailSender))
     v1.POST("/updatepassword", controllers.UpdatePassword)
-    v1.POST("/send-verification-email",middlewares.IsAuthorized(), controllers.SendEmailVerification(emailSender))
+    v1.POST("/send-verification-email",middlewares.IsAuthorized(), controllers.SendEmailVerificationLink(emailSender))
     v1.GET("/verify-email", controllers.VerifyEmail)
 }

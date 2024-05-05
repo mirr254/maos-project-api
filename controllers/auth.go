@@ -14,13 +14,15 @@ import (
 	gin "github.com/gin-gonic/gin"
 )
 
+var config = utils.GetEnvVars()
+
 type ErrorResponse struct {
     Error string `json:"error"`
 }
 
 func Signup(c *gin.Context) {
 
-    var user models.User
+    var user models.Users
 
 	email_verification_token, err := utils.GenerateToken()
 	if err != nil {
@@ -28,7 +30,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 	
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		logrus.Error(err)
@@ -51,7 +53,7 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-    var existingUser models.User
+    var existingUser models.Users
 
 
     db.Where("email = ?", user.Email).First(&existingUser)
@@ -96,10 +98,10 @@ func Signup(c *gin.Context) {
 	return 
 }
 
-func SendEmailVerification(emailSender utils.EmailSender) gin.HandlerFunc {
+func SendEmailVerificationLink(emailSender utils.EmailSender) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		
-		var user models.User
+		var user models.Users
 
 		// check if user is logged in
 		cookie, err := c.Cookie("token")
@@ -115,7 +117,7 @@ func SendEmailVerification(emailSender utils.EmailSender) gin.HandlerFunc {
 			return
 		}
 
-		db, err := models.InitDB()
+		db, err := models.InitDB(config)
 		if err != nil {
 			// Handle error
 			logrus.Error(err)
@@ -170,14 +172,14 @@ func SendEmailVerification(emailSender utils.EmailSender) gin.HandlerFunc {
 
 func VerifyEmail(c *gin.Context) {
 
-	var user models.User
+	var user models.Users
 	token := c.Query("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid token"})
 		return
 	}
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		logrus.Error(err)
@@ -201,8 +203,8 @@ func VerifyEmail(c *gin.Context) {
 
 func Login(c *gin.Context) {
 
-	var user models.User
-	db, err := models.InitDB()
+	var user models.Users
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		panic(err)
@@ -213,8 +215,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var existingUser models.User
-
+	var existingUser models.Users
 	db.Where("email = ?", user.Email).First(&existingUser)
 
 	if existingUser.ID == 0 {
@@ -263,9 +264,9 @@ func Login(c *gin.Context) {
 func ResetPassword( emailSender utils.EmailSender  )  gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-	var user models.User
+	var user models.Users
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		panic(err)
@@ -275,7 +276,7 @@ func ResetPassword( emailSender utils.EmailSender  )  gin.HandlerFunc {
 		return
 	}
 
-	var existingUser models.User
+	var existingUser models.Users
 
 	db.Where("email = ?", user.Email).First(&existingUser)
 
@@ -319,9 +320,9 @@ func ResetPassword( emailSender utils.EmailSender  )  gin.HandlerFunc {
 
 func UpdatePassword(c *gin.Context) {
 	
-	var user models.User
+	var user models.Users
 
-	db, err := models.InitDB()
+	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
 		panic(err)
@@ -338,7 +339,7 @@ func UpdatePassword(c *gin.Context) {
 	}
 	db.Where("reset_password_token = ?", token).First(&user)
 
-	var existingUser models.User
+	var existingUser models.Users
 
 
 	var errHashNew error
