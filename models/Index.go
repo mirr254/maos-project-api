@@ -33,7 +33,7 @@ func InitDB(cfg Config) ( *gorm.DB, error){
 		// panic(err)
 		return nil, err
 	}
-	if err := db.AutoMigrate(&User{}); err != nil {
+	if err := db.AutoMigrate(&Users{}); err != nil {
 		// panic(err)
 		return nil, err
 	}
