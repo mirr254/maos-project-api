@@ -40,6 +40,12 @@ func (s *SignupTestSuite) SetupTest() {
 		// Handle error
 		s.T().Fatal("Error initializing database connection")
 	}
+	// Clear the users table
+	result := db.Exec("TRUNCATE TABLE users RESTART IDENTITY")
+	if result.Error != nil {
+		s.T().Fatal("Failed to truncate table:", result.Error)
+	}
+	
 	db.AutoMigrate(&models.Users{})
 
     s.router = utils.SetUpRouter()
@@ -134,11 +140,11 @@ func TestSignupSuite(t *testing.T) {
 
 func (s *SignupTestSuite) TearDownSuite() {
 
-    result := s.db.Exec("DROP TABLE users")
-	if result.Error != nil {
-		s.T().Fatal("Error dropping table: ", result.Error)
-	} 
-	s.T().Log("TestSignupSuite TearDown: dropped table users")
+    if err := s.db.Migrator().DropTable(&models.Users{}); err != nil {
+        s.T().Error("Failed to drop table:", err)
+    } else {
+        s.T().Log("TearDownSuite: Users table dropped")
+    }
 
 }
 
