@@ -40,7 +40,7 @@ func (s *SignupTestSuite) SetupTest() {
 		// Handle error
 		s.T().Fatal("Error initializing database connection")
 	}
-	// Clear the users table
+	// TODO: Move this to teardown function
 	result := db.Exec("TRUNCATE TABLE users RESTART IDENTITY")
 	if result.Error != nil {
 		s.T().Fatal("Failed to truncate table:", result.Error)
