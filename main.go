@@ -23,6 +23,7 @@ func main() {
 
 	r := utils.SetUpRouter()
 	router.AuthRoutes(r)
+	router.HealthCheck(r)
 	r.Run(":8080")
 
 }
