@@ -1,0 +1,18 @@
+
+# Go binary files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test and benchmark files
+*.test
+*.out
+_bench
+
+# Go build output
+/bin/
+/pkg/
+
+*.env
