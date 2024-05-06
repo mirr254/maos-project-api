@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    restart: always
+    depends_on:
+      - database
+    networks:
+      - maos-cloud-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+    env_file:
+      - .env
+
   database:
     image: postgres:16
     ports:
