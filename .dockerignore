@@ -1,0 +1,13 @@
+
+# Ignore Go build artifacts
+*.exe
+*.exe~
+*.test
+*.prof
+
+# Ignore Go dependency management files
+vendor/
+Gopkg.lock
+Gopkg.toml
+
+*.env
