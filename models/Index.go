@@ -5,9 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
-	"github.com/joho/godotenv"
 	"gorm.io/gorm"
-	"os"
 )
 
 type Config struct {
@@ -21,12 +19,8 @@ type Config struct {
 
 func InitDB(cfg Config) ( *gorm.DB, error){
 
-	if err := godotenv.Load("../.env"); err != nil {
-		logrus.Fatalf("Error loading .env file: %v", err)
-	}
-
 	dsn := fmt.Sprintf("host=%s user=%s port=%s password=%s dbname=%s sslmode=%s", 
-	         os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB_PORT") ,os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_SSL_MODE"))
+	         cfg.Host, cfg.User, cfg.Port ,cfg.Password, cfg.DBName, cfg.SSLMode)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {

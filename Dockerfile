@@ -7,7 +7,8 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o app .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o main .
+RUN chmod +x main
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates curl bash && \
@@ -21,9 +22,8 @@ ENV PATH=$PATH:/home/app/.pulumi/bin
 
 WORKDIR /app
 
-# Copy the pre-built binary file from the previous stage
 COPY --from=builder /app .
 
 EXPOSE 8080
 
-CMD ["./app"]
+CMD ["./main"]

@@ -35,6 +35,7 @@ type SignupTestSuite struct {
 
 func (s *SignupTestSuite) SetupTest() {
 
+	config := utils.GetEnvVars()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
@@ -157,7 +158,8 @@ type LoginTestSuite struct {
 }
 
 func (s *LoginTestSuite) SetupTest() {
-	
+
+	config := utils.GetEnvVars()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
@@ -318,6 +320,7 @@ func (s *EmailVerficationLinkTestSuite) prepareTestContext(userBody []byte) (*gi
 
 func (s *EmailVerficationLinkTestSuite) SetupTest() {
 
+	config := utils.GetEnvVars()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error

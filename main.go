@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/joho/godotenv"
@@ -12,11 +13,15 @@ import (
 )
 
 func main() {
-	//load .env file
 	err := godotenv.Load()
 	if err != nil {
-		logrus.Fatal("Env file not loaded. Exiting...", err )
-	} 
+		// Ignore error if it's a file not found error
+		if !strings.Contains(err.Error(), "no such file or directory") {
+			logrus.Errorf("Failed to load .env file: %v", err)
+		} else {
+			logrus.Info("No .env file found, using environment variables")
+		}
+	}
 
 	utils.EnsurePlugins()
 	// utils.CreateAwsSession()
