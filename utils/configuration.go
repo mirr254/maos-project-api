@@ -18,3 +18,15 @@ func GetEnvVars() models.Config {
 		SSLMode:  os.Getenv("SSL_MODE"),
 	}
 }
+
+func LoadTestConfig() models.Config {
+    // Load configuration from a file
+    return models.Config{
+        Host:     "database",
+        User:     "postgres",
+        Port:     "5432",
+        Password: "postgres",
+        DBName:   "maosproject",
+        SSLMode:  "disable",
+    }
+}

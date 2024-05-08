@@ -2,17 +2,17 @@ package controllers // Replace with your actual package name
 
 import (
 	"bytes"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"strings"
+	"net/http"
+	"encoding/json"
+	"gorm.io/gorm"
+	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/stretchr/testify/mock"
-	"gorm.io/gorm"
 
 	// "maos-cloud-project-api/controllers"
 	utils "maos-cloud-project-api/utils"
@@ -20,9 +20,6 @@ import (
 	"maos-cloud-project-api/mocks"
 	"maos-cloud-project-api/models"
 )
-
-
-
 
 type SignupTestSuite struct {
 	suite.Suite
@@ -35,7 +32,7 @@ type SignupTestSuite struct {
 
 func (s *SignupTestSuite) SetupTest() {
 
-	config := utils.GetEnvVars()
+	config := utils.LoadTestConfig()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
@@ -159,7 +156,7 @@ type LoginTestSuite struct {
 
 func (s *LoginTestSuite) SetupTest() {
 
-	config := utils.GetEnvVars()
+	config := utils.LoadTestConfig()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
@@ -320,7 +317,7 @@ func (s *EmailVerficationLinkTestSuite) prepareTestContext(userBody []byte) (*gi
 
 func (s *EmailVerficationLinkTestSuite) SetupTest() {
 
-	config := utils.GetEnvVars()
+	config := utils.LoadTestConfig()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// Handle error
