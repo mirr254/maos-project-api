@@ -11,3 +11,4 @@ Gopkg.lock
 Gopkg.toml
 
 *.env
+helm/

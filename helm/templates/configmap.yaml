@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+data:
+    DB_SSL_MODE: {{ .Values.env.db_ssl_mode }}
+    BASE_URL: {{ .Values.env.base_url }}
+    SMTP_HOST: {{ .Values.env.smtp_host }}
+    SMTP_PORT: {{ .Values.env.smtp_host }}
+    FROM_EMAIL: {{ .Values.env.from_email }}
+    ENV: {{ .Values.env.env}}
+    GIN_MODE: {{ .Values.env.gin_mode }}

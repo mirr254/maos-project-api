@@ -29,6 +29,7 @@ services:
     restart: always
     networks:
       - maos-cloud-network
+      
   mailhog:
     image: mailhog/mailhog
     ports:
