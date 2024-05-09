@@ -1,33 +1,32 @@
 package main
 
 import (
-	"strings"
+	"maos-cloud-project-api/config"
+	"maos-cloud-project-api/router"
+	utils "maos-cloud-project-api/utils"
+	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/joho/godotenv"
-	
-	utils "maos-cloud-project-api/utils"
-	"maos-cloud-project-api/router"
-	
-
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		// Ignore error if it's a file not found error
-		if !strings.Contains(err.Error(), "no such file or directory") {
-			logrus.Errorf("Failed to load .env file: %v", err)
-		} else {
-			logrus.Info("No .env file found, using environment variables")
-		}
-	}
 
+	cfg := config.LoadConfig(".")
+
+	os.Setenv("MOCK_TESTS", cfg.MOCK_TESTS)
+	os.Setenv("ENV", cfg.ENV)
+
+	_, err := config.InitDB(cfg)
+	if err != nil {
+		logrus.Error("Database Initialization failed", err)
+		return
+	}
+	
 	utils.EnsurePlugins()
 	// utils.CreateAwsSession()
 
 	r := utils.SetUpRouter()
-	router.AuthRoutes(r)
+	router.AuthRoutes(r, cfg)
 	router.HealthCheck(r)
 	r.Run(":8080")
 
