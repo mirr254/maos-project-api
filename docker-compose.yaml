@@ -36,6 +36,20 @@ services:
       - "1025:1025" # SMTP 
     networks:
       - maos-cloud-network
+
+  test_database:
+    image: postgres:16
+    ports:
+      - "5436:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=maosproject
+    restart: always
+    networks:
+      - maos-cloud-network
+
+  
 networks:
   maos-cloud-network:
     driver: bridge
