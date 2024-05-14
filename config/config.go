@@ -20,7 +20,6 @@ type Config struct {
 	FROM_EMAIL     string
 	EMAIL_PASSWORD string 
 	ENV            string
-	MOCK_TESTS     string
 }
 
 func LoadConfig(configPaths ...string) *Config {
