@@ -10,10 +10,10 @@ configMap:
     from_email: maosproject@localhost
     env: development
     gin_mode: release
-    db_port: 5432
+    db_port: 5435
 
 secrets:
-  db_host: "database"
+  db_host: host.docker.internal
   db_user: postgres
   db_password: postgres
   db_name: maosproject
@@ -59,7 +59,8 @@ securityContext: {}
 
 service:
   type: ClusterIP
-  port: 80
+  port: 8080
+  targetPort: 8080
 
 ingress:
   enabled: false
