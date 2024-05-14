@@ -1,22 +1,24 @@
 package utils
 
 import (
+	"maos-cloud-project-api/config"
 	"net/smtp"
 	"os"
 
 	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
 type EmailSender interface {
-	SendEmail( toEmail, subject, body string) error
+	SendEmail(cfg *config.Config, toEmail, subject, body string) error
 }
 
 type SMTPSender struct {}
 
-func (s *SMTPSender) SendEmail( toEmail, subject, body string) error {
+func (s *SMTPSender) SendEmail(cfg *config.Config, toEmail, subject, body string) error {
 
-	return SendEmail( toEmail, subject, body)
+	return SendEmail(cfg, toEmail, subject, body)
 }
 
 /*
@@ -24,12 +26,14 @@ SendEmail Sends an email to the user(toEmail)
    args: toEmail, subject, body
    returns: error
 */
-func SendEmail( toEmail, subject, body string) error {
+func SendEmail(cfg *config.Config, toEmail, subject, body string) error {
 
-	smtpHost := os.Getenv("SMTP_HOST")
-    smtpPort := os.Getenv("SMTP_PORT")
-    from     := os.Getenv("FROM_EMAIL")
-    pass     := os.Getenv("EMAIL_PASSWORD")
+	logrus.Info("SMTP CFG: ", cfg.SMTP_HOST)
+
+	smtpHost := cfg.SMTP_HOST
+    smtpPort := cfg.SMTP_PORT
+    from     := cfg.FROM_EMAIL
+    pass     := cfg.EMAIL_PASSWORD
 
 	to := []string{toEmail}
 	message := []byte("To: " + toEmail + "\r\n" +
@@ -41,6 +45,8 @@ func SendEmail( toEmail, subject, body string) error {
 	if pass != "" {
 		auth = smtp.PlainAuth("", from, pass, smtpHost)
 	}
+
+	logrus.Info("PAAAASSSSS:", pass)
 
 	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
 	if err != nil {

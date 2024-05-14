@@ -7,7 +7,6 @@
 *.dylib
 
 # Go test and benchmark files
-*.test
 *.out
 _bench
 
