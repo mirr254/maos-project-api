@@ -5,10 +5,11 @@ metadata:
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 data:
-    DB_SSL_MODE: {{ .Values.env.db_ssl_mode }}
-    BASE_URL: {{ .Values.env.base_url }}
-    SMTP_HOST: {{ .Values.env.smtp_host }}
-    SMTP_PORT: {{ .Values.env.smtp_host }}
-    FROM_EMAIL: {{ .Values.env.from_email }}
-    ENV: {{ .Values.env.env}}
-    GIN_MODE: {{ .Values.env.gin_mode }}
+    DB_SSL_MODE: {{ .Values.configMap.env.db_ssl_mode }}
+    BASE_URL: {{ .Values.configMap.env.base_url }}
+    SMTP_HOST: {{ .Values.configMap.env.smtp_host }}
+    SMTP_PORT: {{ .Values.configMap.env.smtp_host | quote }}
+    FROM_EMAIL: {{ .Values.configMap.env.from_email }}
+    ENV: {{ .Values.configMap.env.env}}
+    GIN_MODE: {{ .Values.configMap.env.gin_mode }}
+    DB_PORT: {{ .Values.configMap.env.db_port | quote}}

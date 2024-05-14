@@ -29,4 +29,6 @@ image:
   tag: "local"
 ```
 
+Run `microk8s kubectl config view --raw > ~/.kube/config` to use kubectl normally.  
+
 Note: Avoid tagging local images with `latest` since containerd will not cache images with that tag.

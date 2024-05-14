@@ -10,15 +10,15 @@ configMap:
     from_email: maosproject@localhost
     env: development
     gin_mode: release
+    db_port: 5432
 
 secrets:
-  db_host: localhost
+  db_host: "database"
   db_user: postgres
   db_password: postgres
   db_name: maosproject
-  db_port: 5435
   secret_key: veryStrongSecretKey
-  email_password: 
+  email_password: veryStrongEmailPassword123
 
 replicaCount: 1
 
