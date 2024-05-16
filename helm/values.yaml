@@ -10,25 +10,26 @@ configMap:
     from_email: maosproject@localhost
     env: development
     gin_mode: release
-    db_port: 5435
+    db_port: 5432
 
 secrets:
-  db_host: host.docker.internal
-  db_user: postgres
-  db_password: postgres
-  db_name: maosproject
+  db_host: postgresql.db.svc.cluster.local
+  db_user: healthy
+  db_password: healthy
+  db_name: fruits_database
   secret_key: veryStrongSecretKey
   email_password: veryStrongEmailPassword123
 
 replicaCount: 1
 
 image:
-  repository: maos-project-api
-  pullPolicy: Never
+  repository: kungus/maos-project-api
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "local"
+  tag: "0.0.1"
 
 imagePullSecrets: []
+  # - name: regcred  
 nameOverride: ""
 fullnameOverride: ""
 
@@ -60,7 +61,6 @@ securityContext: {}
 service:
   type: ClusterIP
   port: 8080
-  targetPort: 8080
 
 ingress:
   enabled: false
@@ -94,10 +94,18 @@ livenessProbe:
   httpGet:
     path: /api/v1/health
     port: http
+  initialDelaySeconds: 15
+  periodSeconds: 15
+  timeoutSeconds: 20
+  failureThreshold: 5
 readinessProbe:
   httpGet:
     path: /api/v1/health
     port: http
+  initialDelaySeconds: 20
+  periodSeconds: 15
+  timeoutSeconds: 20
+  failureThreshold: 5
 
 autoscaling:
   enabled: false

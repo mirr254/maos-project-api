@@ -27,10 +27,6 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      hostAliases:
-        - ip: "172.17.0.1"  # The Docker bridge IP for DEVEVELOPMENT
-          hostnames:
-            - "host.docker.internal"
       serviceAccountName: {{ include "helm.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}

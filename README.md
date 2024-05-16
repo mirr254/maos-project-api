@@ -32,3 +32,18 @@ image:
 Run `microk8s kubectl config view --raw > ~/.kube/config` to use kubectl normally.  
 
 Note: Avoid tagging local images with `latest` since containerd will not cache images with that tag.
+
+For setting up db testing locally
+```sh
+  DB_USERNAME=test
+  DB_PASSWORD=test
+
+  VERSION=11.9.13
+  helm install postgresql bitnami/postgresql \
+    --version $VERSION \
+    --set auth.username=$DB_USERNAME \
+    --set auth.password=$DB_PASSWORD \
+    --set auth.database=fruits_database \
+    --create-namespace \
+    -n db
+```
