@@ -1,6 +1,6 @@
-DB_HOST: "localhost"
+DB_HOST: "test_database"
 DB_USER: postgres
-DB_PORT: 5436
+DB_PORT: 5433
 DB_PASSWORD: postgres
 DB_NAME: maosproject
 DB_SSL_MODE: prefer
