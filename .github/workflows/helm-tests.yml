@@ -1,0 +1,41 @@
+name: Run Helm Tests
+
+on:
+    push:
+        branches:
+        - main
+    pull_request:
+        branches:
+        - main
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+
+        - name: Set up Helm
+          uses: azure/setup-helm@v1
+          with:
+            version: v3.6.3
+
+        - name: Install Helm Chart
+          run: |
+            helm install mpa ./helm
+
+        - name: Run Linting
+          run: |
+            helm lint ./helm
+
+        - name: Install Helm Unit Test
+          run: |
+            helm plugin install https://github.com/quintush/helm-unittest
+
+        - name: Test Helm Chart
+          run: |
+            helm unittest ./helm
+
+        - name: Uninstall Helm Chart
+          run: |
+            helm uninstall my-release
