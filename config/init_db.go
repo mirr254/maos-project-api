@@ -9,8 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
-
 func InitDB(cfg *Config) ( *gorm.DB, error){
 
 	dsn := fmt.Sprintf("host=%s user=%s port=%s password=%s dbname=%s sslmode=%s", 

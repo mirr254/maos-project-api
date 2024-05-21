@@ -15,3 +15,5 @@ _bench
 /pkg/
 
 *.env
+**.tar.gz
+**.tar

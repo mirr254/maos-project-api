@@ -20,13 +20,26 @@ type Config struct {
 	FROM_EMAIL     string
 	EMAIL_PASSWORD string 
 	ENV            string
-	MOCK_TESTS     string
 }
 
 func LoadConfig(configPaths ...string) *Config {
     viper.SetConfigName("config") // name of config file (without extension)
-    viper.SetConfigType("yaml")   // or "json"
-    viper.AutomaticEnv()          // read in environment variables that match
+    viper.SetConfigType("yaml")   
+    viper.AutomaticEnv()          
+
+    viper.BindEnv("DB_HOST")
+    viper.BindEnv("DB_USER")
+    viper.BindEnv("DB_PORT")
+    viper.BindEnv("DB_PASSWORD")
+    viper.BindEnv("DB_NAME")
+    viper.BindEnv("DB_SSL_MODE")
+    viper.BindEnv("SECRET_KEY")
+    viper.BindEnv("BASE_URL")
+    viper.BindEnv("SMTP_HOST")
+    viper.BindEnv("SMTP_PORT")
+    viper.BindEnv("FROM_EMAIL")
+    viper.BindEnv("EMAIL_PASSWORD")
+    viper.BindEnv("ENV")
 
     for _, path := range configPaths {
         viper.AddConfigPath(path) // path to look for the config file in

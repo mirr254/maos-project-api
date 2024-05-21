@@ -1,0 +1,34 @@
+suite: test-deployment
+templates:
+  - deployment.yaml
+tests: 
+  - it: should container correct container image
+    set: 
+      image.repository: kungus/maos-project-api
+      image.tag: 0.0.1
+    asserts:
+      - equal: 
+          path: spec.containers[0].image
+          value: kungus/maos-project-api:0.0.1
+  - it: should have 2 replica
+    set:
+      replicaCount: 2
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+  - it: should have correct liveness probe
+    asserts:
+      - equal:
+          path: spec.containers[0].livenessProbe.httpGet.path
+          value: /api/v1/health
+  - it: should have correct readiness probe
+    asserts:
+      - equal:
+          path: spec.containers[0].readinessProbe.httpGet.path
+          value: /api/v1/health
+  - it: should have correct port
+    asserts:
+      - equal:
+          path: spec.containers[0].ports[0].containerPort
+          value: 8080
