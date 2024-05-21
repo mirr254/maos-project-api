@@ -38,7 +38,6 @@ func (s *SignupTestSuite) SetupTest() {
 
 	
 	cfg := config.LoadConfig("./")
-	s.T().Log("MOCK_TESTS: ", cfg.MOCK_TESTS)
 
 	db, err := config.InitDB(cfg)
 	if err != nil {

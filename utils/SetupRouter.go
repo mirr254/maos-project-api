@@ -9,9 +9,6 @@ import (
 func SetUpRouter() *gin.Engine {
 
 	r := gin.Default()
-	// config := GetEnvVars()
-
-	// models.InitDB(config)
 
 	return r
 }
