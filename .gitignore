@@ -14,6 +14,6 @@ _bench
 /bin/
 /pkg/
 
-*.env
+**.env
 **.tar.gz
 **.tar
