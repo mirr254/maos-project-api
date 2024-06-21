@@ -5,6 +5,7 @@ import (
 	"os"
 	"gopkg.in/yaml.v3"
 	"path/filepath"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 )
 
 type ProjectConfig struct {
@@ -122,4 +123,23 @@ func GetRootDir() (string, error) {
 	}
 	exeDir := filepath.Dir(exePath)
 	return filepath.Join(exeDir, ".."), nil // Adjusting the path to the project directory
+}
+
+func ConvertProjectConfigToAutoConfigMap(projectConfig ProjectConfig) auto.ConfigMap {
+	configMap := auto.ConfigMap{}
+
+	configMap["description"] = auto.ConfigValue{Value: projectConfig.Description}
+	configMap["name"] = auto.ConfigValue{Value: projectConfig.Name}
+	configMap["runtime"] = auto.ConfigValue{Value: projectConfig.Runtime}
+	configMap["options:refresh"] = auto.ConfigValue{Value: projectConfig.Options.Refresh}
+	configMap["template:description"] = auto.ConfigValue{Value: projectConfig.Template.Description}
+	configMap["template:displayName"] = auto.ConfigValue{Value: projectConfig.Template.DisplayName}
+	configMap["template:metadata:cloud"] = auto.ConfigValue{Value: projectConfig.Template.Metadata.Cloud}
+	configMap["template:config:aws:region:default"] = auto.ConfigValue{Value: projectConfig.Template.Config.AWSRegion.Default}
+	configMap["template:config:aws:region:description"] = auto.ConfigValue{Value: projectConfig.Template.Config.AWSRegion.Description}
+	configMap["template:config:aws:region:secret"] = auto.ConfigValue{Value: fmt.Sprintf("%v", projectConfig.Template.Config.AWSRegion.Secret)}
+	configMap["template:config:pulumi:tags:awsRegionDeployed"] = auto.ConfigValue{Value: projectConfig.Template.Config.PulumiTags.AWSRegionDeployed}
+	configMap["template:config:pulumi:tags:projectName"] = auto.ConfigValue{Value: projectConfig.Template.Config.PulumiTags.ProjectName}
+
+	return configMap
 }

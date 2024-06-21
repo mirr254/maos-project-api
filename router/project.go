@@ -10,5 +10,6 @@ func ProjectRoutes( r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 
 	v1.POST("/project", controllers.CreateProject)
+	v1.POST("/stack", controllers.CreateStack)
 
 }

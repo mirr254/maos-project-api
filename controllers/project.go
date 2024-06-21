@@ -66,7 +66,7 @@ func CreateProject(c *gin.Context){
 	ctx := context.Background()
 
 	stack := project.StackName
-	s, err := auto.NewStackInlineSource(ctx, stack, suffixedProjectName, pulumiProgram, auto.Program(pulumiProgram) )
+	s, err := auto.NewStackInlineSource(ctx, stack, suffixedProjectName, PulumiProgram, auto.Program(PulumiProgram) )
 	if err != nil {
 		if auto.IsCreateStack409Error(err) {
 			logrus.Error("Stack Exists error: ", err)
@@ -82,9 +82,9 @@ func CreateProject(c *gin.Context){
 
 
 	// Set stack configuration
-	s.SetConfig(ctx, "aws:region", auto.ConfigValue{Value: project.AwsRegion})
-	s.SetConfig(ctx, "pulumi:tags:awsRegionDeployed", auto.ConfigValue{Value: project.AwsRegion})
-	s.SetConfig(ctx, "pulumi:tags:projectName", auto.ConfigValue{Value: project.ProjectName})
+	projectConfigMap := utils.ConvertProjectConfigToAutoConfigMap(projectConfig)
+	s.SetAllConfig(ctx, projectConfigMap)
+
 
 	//deploy stack
 	upRes, err := s.Up(ctx, optup.ProgressStreams(os.Stdout))
@@ -108,7 +108,7 @@ func CreateProject(c *gin.Context){
 
 }
 
-func pulumiProgram(ctx *pulumi.Context) error {
+func PulumiProgram(ctx *pulumi.Context) error {
 	// Implement your Pulumi program here
 	ctx.Export("Success!", pulumi.Sprintf("success"))
 	return nil
