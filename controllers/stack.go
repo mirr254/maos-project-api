@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
@@ -92,23 +91,30 @@ func CreateStack( c *gin.Context) {
 
 //Deletes a particular stack and all the associated resources
 func DeleteStack(c *gin.Context) {
-    w.Header().Set("content-type", "application/json")
 	
-	ctx := context.Background()
-	
-	stackName := params["stack_name"]
-	projectName := params["project_name"]
+	var stack Stack
+    if err := c.ShouldBindJSON(&stack); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	s, err := auto.SelectStackInlineSource(ctx, stackName, projectName , PulumiProgram, auto.Program(PulumiProgram))
+	// for debugging purposes
+	stackData, _ := json.MarshalIndent(stack, "", "\t")
+	fmt.Println(string(stackData))
+    
+	ctx := context.Background()
+
+	stackName := stack.StackName
+	ProjectName := stack.ProjectName
+
+	s, err := auto.SelectStackInlineSource(ctx, stackName, ProjectName , PulumiProgram, auto.Program(PulumiProgram))
 	if err != nil {
 		// check if stack exists
 		if auto.IsSelectStack404Error(err){
-			w.WriteHeader(404)
-			fmt.Fprintf(w, "Stack %v doesn't exist", stackName)
+			c.JSON(http.StatusNotFound, gin.H{"error": "Stack doesn't exist"})
 			return
 		}
-		w.WriteHeader(500)
-		fmt.Fprintf(w, fmt.Sprintf(err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf(err.Error())})
 		return
 	}
 
@@ -116,8 +122,7 @@ func DeleteStack(c *gin.Context) {
 	_, err = s.Destroy(ctx, optdestroy.ProgressStreams(os.Stdout))
 
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not destroy stack"})
 		return
 	}
 
@@ -125,43 +130,44 @@ func DeleteStack(c *gin.Context) {
 	err = s.Workspace().RemoveStack(ctx, stackName)
 
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not remove stack"})
 		return
 	}
 
-	w.WriteHeader(200)
+	c.JSON(http.StatusOK, gin.H{"message": "Stack deleted successfully"})
 	
 }
 
 //GetStack returns a single stack name if it exists
-// func GetStack(w http.ResponseWriter, req *http.Request) {
+func GetStack( c *gin.Context) {
 
-// 	w.Header().Set("content-type", "application/json")
+	var stack Stack
+    if err := c.ShouldBindJSON(&stack); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-// 	ctx := context.Background()
-// 	params := mux.Vars(req)
-// 	stackName := params["stack_name"]
-// 	projectName := params["project_name"]
+	ctx := context.Background()
 
-// 	_, err := auto.SelectStackInlineSource(ctx, stackName, projectName, auto.Program(createProgram))
-// 	if err != nil {
-// 		// check if stack exists
-// 		if auto.IsSelectStack404Error(err){
-// 			w.WriteHeader(404)
-// 			fmt.Fprintf(w, "Stack %v doesn't exist", stackName)
-// 			return
-// 		}
-// 		w.WriteHeader(500)
-// 		fmt.Fprintf(w, fmt.Sprintf(err.Error()))
-// 		return
-// 	}
+	stackName := stack.StackName
+	ProjectName := stack.ProjectName
 
-// 	response := &StackResponse{
-// 		StackName: stackName,
-// 	}
+	_, err := auto.SelectStackInlineSource(ctx, stackName, ProjectName , PulumiProgram, auto.Program(PulumiProgram))
+	if err != nil {
+		// check if stack exists
+		if auto.IsSelectStack404Error(err){
+			c.JSON(http.StatusNotFound, gin.H{"error": "Stack doesn't exist"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf(err.Error())})
+		return
+	}
 
-// 	json.NewEncoder(w).Encode(&response)
+	response := &StackResponse{
+		StackName: stackName,
+	}
+
+	c.JSON(http.StatusOK, response)
 
 	
-// }
+}
