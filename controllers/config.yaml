@@ -1,0 +1,14 @@
+DB_HOST: localhost
+DB_USER: postgres
+DB_PORT: 5433
+DB_PASSWORD: postgres
+DB_NAME: maosproject
+DB_SSL_MODE: prefer
+
+SECRET_KEY: veryStrongSecretKey
+BASE_URL: http://localhost:8080
+SMTP_HOST: localhost1
+SMTP_PORT: 1025
+FROM_EMAIL: no-reply@maos.io
+EMAIL_PASSWORD: ""
+ENV: development
