@@ -130,3 +130,5 @@ func suffixProjectName(projectName string) string {
 
 	return projectName + "-" + strconv.Itoa(rand.Intn(max-min+1))
 }
+
+
