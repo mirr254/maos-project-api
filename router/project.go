@@ -10,8 +10,8 @@ func ProjectRoutes( r *gin.Engine) {
 	v1 := r.Group("/api/v1")
 
 	v1.POST("/project", controllers.CreateProject)
-	v1.POST("/stack", controllers.CreateStack)
-	v1.GET("/stack", controllers.GetStack)
-	v1.POST("/stack/destroy", controllers.DeleteStack)
+	v1.POST("/:project_name/stack", controllers.CreateStack)
+	v1.GET("/:project_name/stacks", controllers.GetStack)
+	v1.DELETE("/:project_name/:stack_name", controllers.DeleteStack)
 
 }

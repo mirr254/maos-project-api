@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/pulumi/pulumi/sdk/v3/go/auto"
-	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
-	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"maos-cloud-project-api/utils"
+
+	"github.com/gin-gonic/gin"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto/optdestroy"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
+	"github.com/sirupsen/logrus"
 )
 
 type Stack struct {
@@ -32,6 +33,8 @@ Return the stack name if created successfully
 
 */
 func CreateStack( c *gin.Context) {
+
+	projectName := c.Param("project_name")
     
 	var stack Stack
     if err := c.ShouldBindJSON(&stack); err != nil {
@@ -39,7 +42,7 @@ func CreateStack( c *gin.Context) {
 		return
 	}
 
-	projectConfig := utils.BuildProjectConfig(stack.ProjectName, stack.Region)
+	projectConfig := utils.BuildProjectConfig(projectName, stack.Region)
 
 	// for debugging purposes
 	stackData, _ := json.MarshalIndent(stack, "", "\t")
@@ -49,7 +52,7 @@ func CreateStack( c *gin.Context) {
 
 	stackName := stack.StackName
 	ProjectName := stack.ProjectName
-	s, err := auto.NewStackInlineSource(ctx, stackName, ProjectName, PulumiProgram, auto.Program(PulumiProgram) )
+	stck, err := auto.NewStackInlineSource(ctx, stackName, ProjectName, PulumiProgram, auto.Program(PulumiProgram) )
 	if err != nil {
 		if auto.IsCreateStack409Error(err) {
 			logrus.Error("Stack Exists error: ", err)
@@ -65,10 +68,10 @@ func CreateStack( c *gin.Context) {
 
 
     projectConfigMap := utils.ConvertProjectConfigToAutoConfigMap(projectConfig)
-	s.SetAllConfig(ctx, projectConfigMap)
+	stck.SetAllConfig(ctx, projectConfigMap)
 
 	//deploy stack
-	upRes, err := s.Up(ctx, optup.ProgressStreams(os.Stdout))
+	upRes, err := stck.Up(ctx, optup.ProgressStreams(os.Stdout))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not deploy stack"})
 		logrus.Error("Could not deploy stack", err)
@@ -91,23 +94,12 @@ func CreateStack( c *gin.Context) {
 
 //Deletes a particular stack and all the associated resources
 func DeleteStack(c *gin.Context) {
-	
-	var stack Stack
-    if err := c.ShouldBindJSON(&stack); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// for debugging purposes
-	stackData, _ := json.MarshalIndent(stack, "", "\t")
-	fmt.Println(string(stackData))
+	projectName := c.Param("project_name")
+	stackName   := c.Param("stack_name")
     
 	ctx := context.Background()
 
-	stackName := stack.StackName
-	ProjectName := stack.ProjectName
-
-	s, err := auto.SelectStackInlineSource(ctx, stackName, ProjectName , PulumiProgram, auto.Program(PulumiProgram))
+	s, err := auto.SelectStackInlineSource(ctx, stackName, projectName , PulumiProgram, auto.Program(PulumiProgram))
 	if err != nil {
 		// check if stack exists
 		if auto.IsSelectStack404Error(err){
@@ -141,18 +133,19 @@ func DeleteStack(c *gin.Context) {
 //GetStack returns a single stack name if it exists
 func GetStack( c *gin.Context) {
 
+	
 	var stack Stack
     if err := c.ShouldBindJSON(&stack); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	
+	projectName := c.Param("project_name")
+	stackName := stack.StackName
 	ctx := context.Background()
 
-	stackName := stack.StackName
-	ProjectName := stack.ProjectName
 
-	_, err := auto.SelectStackInlineSource(ctx, stackName, ProjectName , PulumiProgram, auto.Program(PulumiProgram))
+	_, err := auto.SelectStackInlineSource(ctx, stackName, projectName , PulumiProgram, auto.Program(PulumiProgram))
 	if err != nil {
 		// check if stack exists
 		if auto.IsSelectStack404Error(err){

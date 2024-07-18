@@ -1,10 +1,10 @@
 package controllers
 
 import (
-    "testing"
     // "github.com/pulumi/pulumi/sdk/v3/go/pulumi"
     // "github.com/pulumi/pulumi/sdk/v3/go/pulumi/test"
     "github.com/stretchr/testify/suite"
+    "testing"
     "strings"
     "strconv"
 )
@@ -41,10 +41,11 @@ func (suite *ProjectTestSuite) TestSuffixProjectName() {
     }
 }
 
-// TestProject is the entry point for this test suite
-func TestProject(t *testing.T) {
+func TestProjectSuite(t *testing.T) {
     suite.Run(t, new(ProjectTestSuite))
 }
+
+
 
 // func TestPulumiProgram(t *testing.T) {
 //     testOptions := &test.ProgramTestOptions{
