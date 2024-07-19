@@ -1,12 +1,13 @@
 package router
 
 import (
+	"maos-cloud-project-api/config"
 	"maos-cloud-project-api/controllers"
 	"maos-cloud-project-api/middlewares"
 	"maos-cloud-project-api/utils"
-	"maos-cloud-project-api/config"
 
 	"github.com/gin-gonic/gin"
+	// "github.com/gin-gonic/gin"
 )
 
 func AuthRoutes(r *gin.Engine, cfg *config.Config) {

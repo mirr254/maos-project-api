@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
+	"maos-cloud-project-api/controllers/aws"
 	"maos-cloud-project-api/utils"
 
 	"github.com/gin-gonic/gin"
@@ -16,54 +16,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Stack struct {
-	StackName   string `json:"stack_name"`
-	ProjectName string `json:"project_name"`
-	Region      string `json:"region"`
-}
-
-type StackResponse struct {
-	StackName  string `json:"stack_name"`
-}
-
 /*
 Creates a new stack for a particular project. Here we understand stack at environment.
 Prod, Staging, Dev
 Return the stack name if created successfully
 
 */
-func CreateStack( c *gin.Context) {
+func CreateStack( project_name, region, stack_name string) (auto.UpdateSummary, error) {
 
-	projectName := c.Param("project_name")
-    
-	var stack Stack
-    if err := c.ShouldBindJSON(&stack); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	projectConfig := utils.BuildProjectConfig(projectName, stack.Region)
-
-	// for debugging purposes
-	stackData, _ := json.MarshalIndent(stack, "", "\t")
-	fmt.Println(string(stackData))
-    
 	ctx := context.Background()
 
-	stackName := stack.StackName
-	ProjectName := stack.ProjectName
-	stck, err := auto.NewStackInlineSource(ctx, stackName, ProjectName, PulumiProgram, auto.Program(PulumiProgram) )
+	stck, err := auto.NewStackInlineSource(ctx, stack_name, project_name, PulumiProgram, auto.Program(PulumiProgram) )
 	if err != nil {
 		if auto.IsCreateStack409Error(err) {
 			logrus.Error("Stack Exists error: ", err)
-			c.JSON(http.StatusConflict, gin.H{"error": "Stack already exists"})
-			return
+			return auto.UpdateSummary{}, err
 		} else {
 			logrus.Error("Stack Error ", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create stack"})
-			return
+			return auto.UpdateSummary{}, err
 		}
 
+	}
+
+	projectConfig, err := utils.BuildProjectConfig(project_name, region)
+	if err != nil {
+		logrus.Error("Could not build project config", err)
+		return auto.UpdateSummary{}, err
 	}
 
 
@@ -73,22 +51,27 @@ func CreateStack( c *gin.Context) {
 	//deploy stack
 	upRes, err := stck.Up(ctx, optup.ProgressStreams(os.Stdout))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not deploy stack"})
 		logrus.Error("Could not deploy stack", err)
-		return
+		return auto.UpdateSummary{}, err
 	}
 
-	// Convert output to json and print
-	outputJson, err := json.Marshal(upRes.Outputs)
+	// TODO: WHEN the stack is created successfully, redirect to dashboard and run
+	// CreateIAMUser function in the background
+
+		// Generate Pulumi.yaml file dynamically
+	err = utils.GeneratePulumiYAML(projectConfig, fmt.Sprintf("Pulumi.%s.yaml", stack_name))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not marshal output"})
-		return
+		fmt.Println("Could not generate Pulumi.yaml file: ", err)
+		return auto.UpdateSummary{}, err
 	}
 
-	fmt.Println(string(outputJson))
+	_, err = aws.CreateIAMUser(project_name, region, stack_name)
+	if err != nil {
+		logrus.Error("Could not create IAM user", err)
+		return auto.UpdateSummary{}, err
+	}
 
-	c.JSON(http.StatusCreated, string(outputJson))
-	return
+	return upRes.Summary, nil
 	
 }
 
@@ -130,37 +113,3 @@ func DeleteStack(c *gin.Context) {
 	
 }
 
-//GetStack returns a single stack name if it exists
-func GetStack( c *gin.Context) {
-
-	
-	var stack Stack
-    if err := c.ShouldBindJSON(&stack); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	
-	projectName := c.Param("project_name")
-	stackName := stack.StackName
-	ctx := context.Background()
-
-
-	_, err := auto.SelectStackInlineSource(ctx, stackName, projectName , PulumiProgram, auto.Program(PulumiProgram))
-	if err != nil {
-		// check if stack exists
-		if auto.IsSelectStack404Error(err){
-			c.JSON(http.StatusNotFound, gin.H{"error": "Stack doesn't exist"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf(err.Error())})
-		return
-	}
-
-	response := &StackResponse{
-		StackName: stackName,
-	}
-
-	c.JSON(http.StatusOK, response)
-
-	
-}

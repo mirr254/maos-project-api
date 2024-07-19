@@ -1,17 +1,17 @@
 description: Cloud project created by Maos Corp.
-name: testTheo1-8562
+name: testTheo
 options:
     refresh: always
 runtime: go
 template:
     config:
         aws:region:
-            default: us-east-2
+            default: us-east-1
             description: The AWS region to deploy to.
             secret: true
         pulumi:tags:
-            awsRegionDeployed: us-east-2
-            projectName: testTheo1-8562
+            awsRegionDeployed: us-east-1
+            projectName: testTheo
     description: A brief description of the Environment name
     displayName: Environment Name, Prod,Staging
     metadata:

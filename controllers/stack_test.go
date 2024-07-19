@@ -26,17 +26,16 @@ package controllers
 // 	router           *gin.Engine
 // 	w                *httptest.ResponseRecorder
 // 	stackHandlerMock *mocks.MockStack
-    
+
 // }
 
 // func (suite *StackHandlerTestSuite) SetupTest() {
 //     suite.router = utils.SetUpRouter()
 //     suite.router.POST("/api/v1/project/stack", CreateStack)
 
-
 //     // suite.router.DELETE("api/v1/project/stack", DeleteStack)
 //     // suite.project_name = "my-project"
-//     // suite.aws_region = "us-west-2"
+//     // suite.region = "us-west-2"
 // }
 
 // func BuildProjectConfig(projectName, region string) map[string]string {
@@ -45,7 +44,6 @@ package controllers
 // 		"region":       region,
 // 	}
 // }
-
 
 // func ConvertProjectConfigToAutoConfigMap(config map[string]string) auto.ConfigMap {
 // 	autoConfig := auto.ConfigMap{}
@@ -82,7 +80,7 @@ package controllers
 
 // 	assert.Equal(suite.T(), http.StatusCreated, resp.Code)
 // 	mockStack.AssertExpectations(suite.T())
-// } 
+// }
 
 // func TestStack (t *testing.T) {
 // 	suite.Run(t, new(StackHandlerTestSuite))
