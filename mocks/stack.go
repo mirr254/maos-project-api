@@ -1,17 +1,15 @@
 package mocks
 
-// import (
-// 	"context"
+import (
+	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+)
+type Mocks int 
 
-// 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
-// )
+func (Mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.PropertyMap, error) {
+	return args.Name + "_id", args.Inputs, nil
+}
 
-// type StackCreator interface {
-// 	NewStackInlineSource(ctx context.Context, stackName, projectName string, program auto.ProgramFunc, opts ...auto.LocalWorkspaceOption) (auto.Stack, error)
-// }
-
-// type PulumiStackCreator struct{}
-
-// func (psc *PulumiStackCreator) NewStackInlineSource(ctx context.Context, stackName, projectName string, program auto.Program, opts ...auto.LocalWorkspaceOption) (auto.Stack, error) {
-// 	return auto.NewStackInlineSource(ctx, stackName, projectName, program, opts...)
-// }
+func (Mocks) Call(args pulumi.MockCallArgs) (resource.PropertyMap, error) {
+	return args.Args, nil
+}

@@ -14,6 +14,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type iamUser struct {
+	arn   pulumi.StringOutput
+	user  *iam.User
+}
+
 // CreateIAMUser: function is responsible for creating a new IAM user in the stack.
 
 func CreateIAMUser(project_name, region, stack_name string) (auto.UpdateSummary, error) {
@@ -23,8 +28,10 @@ func CreateIAMUser(project_name, region, stack_name string) (auto.UpdateSummary,
 	ctx := context.Background()
 
 	// a closure that captures the params and calls the program function
-	programWithParams := func( ctx *pulumi.Context) error {
-		return createIAMUserprogram(ctx, project_name, region, stack_name)
+	programWithParams := func( ctx *pulumi.Context) (error) {
+
+		_, err := createIAMUserResource(ctx, project_name, region, stack_name)
+		return err
 	}
 	// Create a new local Pulumi workspace with a specified project
 	localWorkspace, err := auto.NewLocalWorkspace(ctx, auto.Program(programWithParams), auto.Project(workspace.Project{
@@ -56,13 +63,16 @@ func CreateIAMUser(project_name, region, stack_name string) (auto.UpdateSummary,
 
 // func to to create a new IAM user
 
-func createIAMUserprogram(ctx *pulumi.Context, project_name, region, account_id string) error {
+func createIAMUserResource(ctx *pulumi.Context, project_name, region, account_id string) (*iamUser, error) {
 	// Create an IAM user
 	user, err := iam.NewUser(ctx, project_name, &iam.UserArgs{
 		Name: pulumi.String( project_name ),
+		Tags: pulumi.StringMap{
+			"Name": pulumi.String( project_name ),
+		},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Define the S3 policy
@@ -75,7 +85,7 @@ func createIAMUserprogram(ctx *pulumi.Context, project_name, region, account_id 
 		Policy: pulumi.String(s3Policy),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Attach the ECR policy to the user
@@ -84,10 +94,13 @@ func createIAMUserprogram(ctx *pulumi.Context, project_name, region, account_id 
 		Policy: pulumi.String(ecrPolicy),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &iamUser{
+		user: user,
+		arn:  user.Arn,
+	} ,nil
 }
 
 // function that return ecr policy
