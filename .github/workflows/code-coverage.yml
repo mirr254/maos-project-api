@@ -20,6 +20,24 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker Layers
+        uses: actions/cache@v3
+        with:
+            path: /tmp/.buildx-cache
+            key: ${{runner.os}}-buildx-${{github.sha}}
+            restore-keys: |
+                ${{ runner.os}}-buildx
+
+      - name: Docker Compose Up
+        run: |
+            docker-compose up -d
+
+      - name: Install Pulumi
+        run: curl -fsSL https://get.pulumi.com | sh      
+
       - name: Run Test
         run: |
           go test -v ./... -covermode=count -coverprofile=coverage.out
