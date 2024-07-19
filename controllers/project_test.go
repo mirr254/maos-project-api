@@ -1,51 +1,49 @@
 package controllers
 
 import (
-    // "github.com/pulumi/pulumi/sdk/v3/go/pulumi"
-    // "github.com/pulumi/pulumi/sdk/v3/go/pulumi/test"
-    "github.com/stretchr/testify/suite"
-    "testing"
-    "strings"
-    "strconv"
+	// "github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	// "github.com/pulumi/pulumi/sdk/v3/go/pulumi/test"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/suite"
 )
 
 type ProjectTestSuite struct {
-    suite.Suite
-    project_name string
-    aws_region string
-
+	suite.Suite
+	project_name string
+	region       string
 }
 
 func (suite *ProjectTestSuite) SetupTest() {
-    suite.project_name = "my-project"
-    suite.aws_region = "us-west-2"
+	suite.project_name = "my-project"
+	suite.region = "us-west-2"
 }
 
 func (suite *ProjectTestSuite) TestSuffixProjectName() {
-    suffixedName := suffixProjectName(suite.project_name)
+	suffixedName := suffixProjectName(suite.project_name)
 
-    // Check if the suffixed name starts with the original project name
-    if !strings.HasPrefix(suffixedName, suite.project_name) {
-        suite.T().Errorf("Expected suffixed name to start with %s, got %s", suite.project_name, suffixedName)
-    }
+	// Check if the suffixed name starts with the original project name
+	if !strings.HasPrefix(suffixedName, suite.project_name) {
+		suite.T().Errorf("Expected suffixed name to start with %s, got %s", suite.project_name, suffixedName)
+	}
 
-    // Check if the suffixed name has a hyphen followed by a number
-    parts := strings.Split(suffixedName, "-")
-    if len(parts) != 3 {
-        suite.T().Errorf("Expected suffixed name to have two parts separated by a hyphen, got %s", suffixedName)
-    }
+	// Check if the suffixed name has a hyphen followed by a number
+	parts := strings.Split(suffixedName, "-")
+	if len(parts) != 3 {
+		suite.T().Errorf("Expected suffixed name to have two parts separated by a hyphen, got %s", suffixedName)
+	}
 
-    _, err := strconv.Atoi(parts[2])
-    if err != nil {
-        suite.T().Errorf("Expected suffixed name to have a number after the hyphen, got %s", suffixedName)
-    }
+	_, err := strconv.Atoi(parts[2])
+	if err != nil {
+		suite.T().Errorf("Expected suffixed name to have a number after the hyphen, got %s", suffixedName)
+	}
 }
 
 func TestProjectSuite(t *testing.T) {
-    suite.Run(t, new(ProjectTestSuite))
+	suite.Run(t, new(ProjectTestSuite))
 }
-
-
 
 // func TestPulumiProgram(t *testing.T) {
 //     testOptions := &test.ProgramTestOptions{

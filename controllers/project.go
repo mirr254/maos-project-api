@@ -1,33 +1,29 @@
 package controllers
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
+	"encoding/json"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
-	"maos-cloud-project-api/utils"
-
 	"github.com/gin-gonic/gin"
-	"github.com/pulumi/pulumi/sdk/v3/go/auto"
-	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/sirupsen/logrus"
 )
 
 type Project struct {
-	ProjectName string `json:"project_name"`
-	AwsRegion   string `json:"aws_region"`
-	StackName   string `json:"environment"`
+	ProjectName   string `json:"project_name"`
+	Region        string `json:"region"`
+	StackName     string `json:"stack_name"`
+	CloudProvider string `json:"cloud_provider"`
 }
 
 type ProjectResponse struct {
-	StackName  string `json:"environment"`
-	URL 	   string `json:"url"`
+	StackName     string `json:"stack_name"`
+	URL           string `json:"url"`
+	CloudProvider string `json:"cloud_provider"`
 	// Status      string `json:"status"`
 }
 
@@ -37,13 +33,7 @@ A Client can have multiple projects.
 
 */
 
-func CreateProject(c *gin.Context){
-
-	// rootDir, err := utils.GetRootDir()
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not get root directory"})
-	// 	return
-	// }
+func CreateProject(c *gin.Context) {
 
 	var project Project
 	if err := c.ShouldBindJSON(&project); err != nil {
@@ -53,57 +43,24 @@ func CreateProject(c *gin.Context){
 
 	suffixedProjectName := suffixProjectName(project.ProjectName)
 
-	projectConfig := utils.BuildProjectConfig(project.ProjectName, project.AwsRegion)
-
-	// Generate Pulumi.yaml file dynamically
-	err := utils.GeneratePulumiYAML(projectConfig, "Pulumi.yaml")
+	UpdateSummary, err := CreateStack(suffixedProjectName, project.Region, project.StackName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		fmt.Println("Could not generate Pulumi.yaml file: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create stack"})
 		return
 	}
 
-	ctx := context.Background()
-
-	stack := project.StackName
-	s, err := auto.NewStackInlineSource(ctx, stack, suffixedProjectName, PulumiProgram, auto.Program(PulumiProgram) )
+	updateSummary := UpdateSummary
+	outputJson, err := json.MarshalIndent(updateSummary, "", "  ")
 	if err != nil {
-		if auto.IsCreateStack409Error(err) {
-			logrus.Error("Stack Exists error: ", err)
-			// c.JSON(http.StatusConflict, gin.H{"error": "Stack already exists"})
-			// return
-		} else {
-			logrus.Error("Stack Error ", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create stack"})
-			return
-		}
-
-	}
-
-
-	// Set stack configuration
-	projectConfigMap := utils.ConvertProjectConfigToAutoConfigMap(projectConfig)
-	s.SetAllConfig(ctx, projectConfigMap)
-
-
-	//deploy stack
-	upRes, err := s.Up(ctx, optup.ProgressStreams(os.Stdout))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not deploy stack"})
-		logrus.Error("Could not deploy stack", err)
-		return
-	}
-
-	// Convert output to json and print
-	outputJson, err := json.Marshal(upRes.Outputs)
-	if err != nil {
+		logrus.Error("Failed to marshal update summary: ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not marshal output"})
 		return
 	}
 
-	fmt.Println(string(outputJson))
+	logrus.Info("Update Summary: ", string(outputJson))
 
-	c.JSON(http.StatusCreated, string(outputJson))
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Project created successfully", "project_name": suffixedProjectName, "stack_name": project.StackName})
 	return
 
 }
@@ -113,7 +70,6 @@ func PulumiProgram(ctx *pulumi.Context) error {
 	ctx.Export("Success!", pulumi.Sprintf("success"))
 	return nil
 }
-
 
 /*
 This function adds a suffix to the provided project name to avoid duplicate names
@@ -130,5 +86,3 @@ func suffixProjectName(projectName string) string {
 
 	return projectName + "-" + strconv.Itoa(rand.Intn(max-min+1))
 }
-
-

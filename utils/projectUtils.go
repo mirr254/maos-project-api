@@ -47,7 +47,7 @@ func GeneratePulumiYAML(config ProjectConfig, filepath string) error {
 	return nil
 }
 
-func BuildProjectConfig(projectName, awsRegion string) ProjectConfig {
+func BuildProjectConfig(projectName, awsRegion string) (ProjectConfig, error) {
 	return ProjectConfig{
 		Description: "Cloud project created by Maos Corp.",
 		Name:        projectName,
@@ -111,7 +111,7 @@ func BuildProjectConfig(projectName, awsRegion string) ProjectConfig {
 				Cloud: "aws",
 			},
 		},
-	}
+	}, nil
 }
 
 
