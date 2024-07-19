@@ -15,8 +15,9 @@ import (
 )
 
 type iamUser struct {
-	arn   pulumi.StringOutput
 	user  *iam.User
+	arn   pulumi.StringOutput
+	tags  pulumi.StringMapOutput
 }
 
 // CreateIAMUser: function is responsible for creating a new IAM user in the stack.
@@ -100,6 +101,7 @@ func createIAMUserResource(ctx *pulumi.Context, project_name, region, account_id
 	return &iamUser{
 		user: user,
 		arn:  user.Arn,
+		tags: user.Tags,
 	} ,nil
 }
 
