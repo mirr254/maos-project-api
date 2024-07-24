@@ -6,14 +6,17 @@ import (
 	"sync"
 	"testing"
 
-	// "github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateIAMUser(t *testing.T) {
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		iamUser, err := createIAMUserResource(ctx, "project_name", "region", "123456789012")
+		project_name := "test-project"
+		region := "us-east-1"
+		accountID := "123456789012"
+
+		iamUser, err := createIAMUserResource(ctx, project_name, region, accountID)
 		assert.NoError(t, err)
 
 		var wg sync.WaitGroup
@@ -28,7 +31,9 @@ func TestCreateIAMUser(t *testing.T) {
 			tags := all[1].(map[string]string)
 			nameTag, ok := tags["Name"]
 			assert.True(t, ok, "Missing Name tag on User %v", urn)
-			assert.Equal(t, "project_name", nameTag, "Incorrect Name tag on User %v", urn)
+			assert.Equal(t, project_name, nameTag, "Incorrect Name tag on User %v", urn)
+
+
 
 			return nil
 		})
