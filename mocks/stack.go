@@ -8,21 +8,22 @@ import (
 type Mocks int
 
 func (Mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.PropertyMap, error) {
-	pulumi.Printf("TOKEN TYPE: ", args.TypeToken)
+	pulumi.Printf("TOKEN TYPE: %s\n\n", args.TypeToken)
 	outputs := args.Inputs.Mappable()
-	if args.TypeToken == "aws:iam/user:User" {
-		outputs["arn"] = resource.NewStringProperty("arn:aws:iam::123456789012:user/" + args.Name)
-		outputs["id"] = resource.NewStringProperty("123456789012")
-	}
-	//check vpc 
-	// if args.TypeToken == "aws:ec2/vpc:Vpc" {
-	// 	outputs["vpc_id"] = resource.NewStringProperty("vpc-1234567890")
-	// 	outputs["cidr_block"] = resource.NewStringProperty("10.10.10.10/16")
-	// 	outputs["tags"] = resource.NewPropertyMapFromMap(map[string]interface{}{
-	// 		"Name": args.Name,
-	// 	})
-	// }
+	switch args.TypeToken {
+	case "aws:iam/user:User":
+		outputs["arn"] = pulumi.String("arn:aws:iam::123456789012:user/" + args.Name)
+		outputs["id"] = pulumi.String("123456789012")
+		outputs["tags"] = resource.NewObjectProperty(resource.PropertyMap{
+			"Name": resource.NewStringProperty(args.Name),
+		})
 
+	case "aws:iam/userPolicy:UserPolicy":
+		outputs["id"] = resource.NewStringProperty(args.Name + "_policy_id")
+		outputs["name"] = resource.NewStringProperty(args.Name)
+		outputs["policy"] = args.Inputs["policy"]
+		outputs["user"] = args.Inputs["user"]
+	}
 	return args.Name + "_id", resource.NewPropertyMapFromMap(outputs), nil
 }
 
