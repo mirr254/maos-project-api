@@ -12,21 +12,22 @@ import (
 
 func TestCreateIAMUser(t *testing.T) {
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		iamUser, err := createIAMUserResource(ctx, "project_name", "region", "account_id")
+		
+		iamUser, err := createIAMUserResource(ctx, "project_name", "region", "123456780")
 		assert.NoError(t, err)
 
 		var wg sync.WaitGroup
 		wg.Add(1)
 
 		// Check if the IAM User has the correct tags
-		pulumi.All(iamUser.arn, iamUser.user.Arn).ApplyT(func ( all []interface{}) error {
+		pulumi.All(iamUser.URN(), iamUser.Tags).ApplyT(func ( all []interface{}) error {
 
 			fmt.Printf("All: %v\n", all)
 
-			// arn := all[0].(string)
+			// urn := all[0].(pulumi.URN)
 			// tags := all[1].(map[string]interface{})
-			// assert.Containsf(t, tags, "Name", "Missing Name tag on User %v", arn)
-			wg.Done()
+			// assert.Containsf(t, tags, "Name", "Missing Name tag on User %v", urn)
+			// wg.Done()
 			return nil
 			
 		})
@@ -51,7 +52,7 @@ func TestCreateIAMUser(t *testing.T) {
 
 		wg.Wait()
 		return nil
-	}, pulumi.WithMocks("project_name", "account_id", mocks.Mocks(0)))
+	}, pulumi.WithMocks("project", "stack", mocks.Mocks(0)))
 	assert.NoError(t, err)
 }
 
