@@ -14,15 +14,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type iamUser struct {
-	user  *iam.User
-	arn   pulumi.StringOutput
-	tags  pulumi.StringMapOutput
-}
-
 // CreateIAMUser: function is responsible for creating a new IAM user in the stack.
 
-func CreateIAMUser(project_name, region, stack_name string) (auto.UpdateSummary, error) {
+func CreateIAMUser(project_name, region, stack_name string) (error) {
 
 	logrus.Info("Creating IAM user: ", project_name)
 
@@ -41,30 +35,31 @@ func CreateIAMUser(project_name, region, stack_name string) (auto.UpdateSummary,
 	}))
 	if err != nil {
 		logrus.Error("Could not create workspace: ", err)
-		return auto.UpdateSummary{}, err
+		return  err
 	}
 
 	newStack, err := auto.SelectStack(ctx, stack_name, localWorkspace)
 	if err != nil {
 		logrus.Error("Could not select stack: ", err)
-		return auto.UpdateSummary{}, err
+		return err
 	}
 
 	//deploy
 	upRes, err := newStack.Up(ctx, optup.ProgressStreams(os.Stdout))
 	if err != nil {
 		logrus.Error("Could not deploy stack: ", err)
-		return auto.UpdateSummary{}, err
+		return err
 	}
 
-	logrus.Info("Stack deployed successfully: ", upRes.Summary)
-	return upRes.Summary, nil
+	logrus.Info("Stack deployed successfully: ", upRes)
+
+	return nil
 
 }
 
 // func to to create a new IAM user
 
-func createIAMUserResource(ctx *pulumi.Context, project_name, region, account_id string) (*iamUser, error) {
+func createIAMUserResource(ctx *pulumi.Context, project_name, region, account_id string) ( *iam.User, error) {
 	// Create an IAM user
 	user, err := iam.NewUser(ctx, project_name, &iam.UserArgs{
 		Name: pulumi.String( project_name ),
@@ -77,32 +72,28 @@ func createIAMUserResource(ctx *pulumi.Context, project_name, region, account_id
 	}
 
 	// Define the S3 policy
-	s3Policy := s3Policy(project_name)
+	s3PolicyStr := s3Policy(project_name)
+	ecrPolicyStr := ecrPolicy(region, account_id, project_name) 
 
-	// TODO: Remove Hardcoded account_id
-	ecrPolicy := ecrPolicy(region, account_id, project_name) 
+	// Create S3 policy to the user
 	_, err = iam.NewUserPolicy(ctx, "s3Policy", &iam.UserPolicyArgs{
 		User:   user.Name,
-		Policy: pulumi.String(s3Policy),
+		Policy: pulumi.String(s3PolicyStr),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// Attach the ECR policy to the user
+	// Create ECR policy to the user
 	_, err = iam.NewUserPolicy(ctx, "ecrPolicy", &iam.UserPolicyArgs{
 		User:   user.Name,
-		Policy: pulumi.String(ecrPolicy),
+		Policy: pulumi.String(ecrPolicyStr),
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	return &iamUser{
-		user: user,
-		arn:  user.Arn,
-		tags: user.Tags,
-	} ,nil
+	
+	return user, nil
 }
 
 // function that return ecr policy

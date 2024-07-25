@@ -65,7 +65,7 @@ func CreateStack( project_name, region, stack_name string) (auto.UpdateSummary, 
 		return auto.UpdateSummary{}, err
 	}
 
-	_, err = aws.CreateIAMUser(project_name, region, stack_name)
+	err = aws.CreateIAMUser(project_name, region, stack_name)
 	if err != nil {
 		logrus.Error("Could not create IAM user", err)
 		return auto.UpdateSummary{}, err
