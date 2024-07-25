@@ -1,4 +1,5 @@
 
+![Coverage](https://img.shields.io/badge/Coverage-35.2%25-yellow)
 How to run server.
 
 ### Testing locally with Microk8s
