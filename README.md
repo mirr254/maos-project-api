@@ -1,4 +1,5 @@
 Following this https://www.retgits.com/2020/01/how-to-create-a-vpc-in-aws-using-pulumi-and-golang/ for a start
+![Coverage](https://img.shields.io/badge/Coverage-35.2%25-yellow)
 
 Pulum over http - https://github.com/pulumi/automation-api-examples/blob/main/go/pulumi_over_http/main.go
 
