@@ -20,16 +20,14 @@ import (
 // 		var wg sync.WaitGroup
 // 		wg.Add(3)
 
-// 		// Check if the VPC has the correct tags
-// 		pulumi.All(vpc.URN(), vpc.Tags).ApplyT(func(all []interface{}) error {
+// 		// Check if subnets greater than 3
+// 		pulumi.All(vpc.vpc.URN(), vpc.vpc.Subnets).ApplyT(func(all []interface{}) error {
 // 			defer wg.Done()
 // 			fmt.Printf("VPC All: %v\n", all)
 
 // 			urn := all[0].(pulumi.URN)
-// 			tags := all[1].(map[string]string)
-// 			nameTag, ok := tags["Name"]
-// 			assert.True(t, ok, "Missing Name tag on VPC %v", urn)
-// 			assert.Equal(t, project_name, nameTag, "Incorrect Name tag on VPC %v", urn)
+// 			subnets := all[1].([]awsec2.Subnet)
+// 			assert.GreaterOrEqual(t, len(subnets), 3, "VPC %v should have at least 3 subnets", urn)
 
 // 			wg.Done()
 // 			return nil
@@ -75,6 +73,7 @@ func TestSecurityGroup(t *testing.T) {
 			wg.Done()
 			return nil
 		})
+
 		wg.Wait()
 		return nil
 	}, pulumi.WithMocks("project", "stack", mocks.Mocks(0)))
