@@ -2,75 +2,85 @@ package aws
 
 import (
 	awsec2 "github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
-	"github.com/pulumi/pulumi-awsx/sdk/v2/go/awsx/ec2"
+	awsx "github.com/pulumi/pulumi-awsx/sdk/v2/go/awsx/ec2"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/sirupsen/logrus"
 )
 
+type sgGroup struct {
+	group *awsec2.SecurityGroup
+}
+
+type jumpbox struct {
+	instance *awsec2.Instance
+    sgGroup *awsec2.SecurityGroup
+}
+
+
 // CreateVPC creates a new VPC with a public subnet and a private subnet.
-func CreateVPCResource(ctx *pulumi.Context, project_name string) error {
+func CreateVPCResource(ctx *pulumi.Context, project_name string) ( *awsx.Vpc, error) {
 
 	// Create a new VPC with a public and private subnet.
-	vpc, err := ec2.NewVpc(ctx, project_name, &ec2.VpcArgs{
+	vpc, err := awsx.NewVpc(ctx, project_name, &awsx.VpcArgs{
 		CidrBlock: pulumi.StringRef("172.16.8.0/24"),
 		Tags: pulumi.StringMap{
 			"Name": pulumi.String(project_name),
 		},
 		NumberOfAvailabilityZones: pulumi.IntRef(4),
-		SubnetSpecs: []ec2.SubnetSpecArgs{
+		SubnetSpecs: []awsx.SubnetSpecArgs{
 			{
-				Type:     ec2.SubnetTypePublic,
+				Type:     awsx.SubnetTypePublic,
 				CidrMask: pulumi.IntRef(22),
 				Name:    pulumi.StringRef(project_name+" Public subnet A"),
 			},
 			{
-				Type:     ec2.SubnetTypePublic,
+				Type:     awsx.SubnetTypePublic,
 				CidrMask: pulumi.IntRef(22),
 				Name:    pulumi.StringRef(project_name+" Public subnet B"),
 			},
 			{
-				Type:     ec2.SubnetTypePrivate,
+				Type:     awsx.SubnetTypePrivate,
 				CidrMask: pulumi.IntRef(20),
 				Name:     pulumi.StringRef(project_name+" Private subnet A"),
 			},
 			{
-				Type:     ec2.SubnetTypePrivate,
+				Type:     awsx.SubnetTypePrivate,
 				CidrMask: pulumi.IntRef(20),
 				Name:     pulumi.StringRef(project_name+" Private subnet N"),
 			},
 			
 		},
-		NatGateways: &ec2.NatGatewayConfigurationArgs{
-			Strategy: ec2.NatGatewayStrategySingle,
+		NatGateways: &awsx.NatGatewayConfigurationArgs{
+			Strategy: awsx.NatGatewayStrategySingle,
 		},
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	//create security group
-	err = CreateSecurityGroup(ctx, project_name, vpc)
+	_, err = createSecurityGroup(ctx, project_name, vpc)
 	if err != nil {
 		logrus.Error("Could not create security group", err)
-		return err
+		return nil, err
 	}
 
 	//create jumpbox
 	err = CreateJumpBoxResource(ctx, project_name, vpc)
 	if err != nil {
 		logrus.Error("Could not create jumpbox", err)
-		return err
+		return nil, err
 	}
 
-	ctx.Export("vpcID", vpc.VpcId)
-	return nil
+	
+	return vpc, nil
 
 }
 
 //create security group
-func CreateSecurityGroup(ctx *pulumi.Context, project_name string, vpc *ec2.Vpc) error {
+func createSecurityGroup(ctx *pulumi.Context, project_name string, vpc *awsx.Vpc) ( *sgGroup, error) {
 	// Create a new security group.
-	_, err := awsec2.NewSecurityGroup(ctx, project_name, &awsec2.SecurityGroupArgs{
+	group, err := awsec2.NewSecurityGroup(ctx, project_name, &awsec2.SecurityGroupArgs{
 		VpcId: vpc.VpcId,
 		Ingress: awsec2.SecurityGroupIngressArray{
 			&awsec2.SecurityGroupIngressArgs{
@@ -86,7 +96,7 @@ func CreateSecurityGroup(ctx *pulumi.Context, project_name string, vpc *ec2.Vpc)
 				FromPort: pulumi.Int(22),
 				ToPort:   pulumi.Int(22),
 				CidrBlocks: pulumi.StringArray{
-					pulumi.String("0.0.0.0/0"), //TDO: Change this to a more secure IP
+					pulumi.String("10.0.0.0/0"), //TDO: Change this to a more secure IP
 				},
 			},
 			&awsec2.SecurityGroupIngressArgs{
@@ -114,15 +124,17 @@ func CreateSecurityGroup(ctx *pulumi.Context, project_name string, vpc *ec2.Vpc)
 	})
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// ctx.Export("vpcId", pulumi.String(vpcID))
-	return nil
+	return &sgGroup{
+		group: group,
+	}, nil
 	
 }
 
 //create ec2 instance to be used as a jumpbox
-func CreateJumpBoxResource(ctx *pulumi.Context, project_name string, vpc *ec2.Vpc) error {
+func CreateJumpBoxResource(ctx *pulumi.Context, project_name string, vpc *awsx.Vpc) error {
 	// Create a new security group.
 	ami, err := awsec2.LookupAmi(ctx, &awsec2.LookupAmiArgs{
 		Filters: []awsec2.GetAmiFilter{

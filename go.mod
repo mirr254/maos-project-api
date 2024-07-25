@@ -77,6 +77,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
 	github.com/pulumi/esc v0.9.1 // indirect
+	github.com/pulumi/pulumi-aws/sdk/v4 v4.38.1 // indirect
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.45.0 // indirect
 	github.com/pulumi/pulumi-awsx/sdk/v2 v2.13.0 // indirect
 	github.com/pulumi/pulumi-docker/sdk/v4 v4.4.3 // indirect
