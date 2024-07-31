@@ -25,6 +25,7 @@ func main() {
 	router.AuthRoutes(r, cfg)
 	router.HealthCheck(r)
 	router.ProjectRoutes(r)
+	router.AWSVpcRoutes(r)
 	r.Run(":8080")
 
 }

@@ -43,16 +43,16 @@ jobs:
           go test -v ./... -covermode=count -coverprofile=coverage.out
           go tool cover -func=coverage.out -o=coverage.out
 
-      - name: Go Coverage Badge  # Pass the `coverage.out` output to this action
-        uses: tj-actions/coverage-badge-go@v2
-        with:
-          filename: coverage.out
+      - name: Generate Coverage Badge
+        run: |
+          coverage=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}')
+          percent=$(echo $coverage | sed 's/%//')
+          curl -o coverage-badge.svg "https://img.shields.io/badge/Coverage-${percent}%25-brightgreen"
 
-      - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v16
-        id: verify-changed-files
-        with:
-          files: README.md
+      - name: Update README with Coverage Badge
+        run: |
+          sed -i '/!\[Coverage\](.*)/d' README.md
+          sed -i "1i ![Coverage](coverage-badge.svg)\n" README.md
 
       - name: Commit changes
         if: steps.verify-changed-files.outputs.files_changed == 'true'
@@ -66,5 +66,5 @@ jobs:
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ github.token }}
+          github_token: ${{ secrets.GIT_TOKEN }}
           branch: ${{ github.head_ref }}

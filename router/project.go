@@ -1,7 +1,7 @@
 package router
 
 import (
-	"maos-cloud-project-api/controllers"
+	"maos-cloud-project-api/controllers/aws"
 
 	"github.com/gin-gonic/gin"
 )

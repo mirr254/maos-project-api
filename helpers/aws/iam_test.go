@@ -1,4 +1,4 @@
-package aws
+package aws_helpers
 
 import (
 	"fmt"
@@ -12,46 +12,35 @@ import (
 
 func TestCreateIAMUser(t *testing.T) {
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		iamUser, err := createIAMUserResource(ctx, "project_name", "region", "account_id")
+		project_name := "test-project"
+		region := "us-east-1"
+		accountID := "123456789012"
+
+		iamUser, err := createIAMUserResource(ctx, project_name, region, accountID)
 		assert.NoError(t, err)
 
 		var wg sync.WaitGroup
 		wg.Add(1)
 
 		// Check if the IAM User has the correct tags
-		pulumi.All(iamUser.arn, iamUser.user.Arn).ApplyT(func ( all []interface{}) error {
-
+		pulumi.All(iamUser.URN(), iamUser.Tags).ApplyT(func(all []interface{}) error {
+			defer wg.Done() // Ensure Done is called
 			fmt.Printf("All: %v\n", all)
 
-			// arn := all[0].(string)
-			// tags := all[1].(map[string]interface{})
-			// assert.Containsf(t, tags, "Name", "Missing Name tag on User %v", arn)
-			wg.Done()
+			urn := all[0].(pulumi.URN)
+			tags := all[1].(map[string]string)
+			nameTag, ok := tags["Name"]
+			assert.True(t, ok, "Missing Name tag on User %v", urn)
+			assert.Equal(t, project_name, nameTag, "Incorrect Name tag on User %v", urn)
+
+
+
 			return nil
-			
 		})
-
-		// Check if the IAM User has the correct s3 policy attached
-		// pulumi.All(iamUser.arn, iamUser.user.Arn).ApplyT(func ( all []interface{}) error {
-		// 	urn := all[0].(pulumi.URN)
-		// 	policy := all[1].(string)
-		// 	assert.Containsf(t, policy, "s3Policy", "Missing S3 policy on User %v", urn)
-		// 	wg.Done()
-		// 	return nil
-		// })
-
-		// // Check if the IAM User has the correct ECR policy attached
-		// pulumi.All(iamUser.arn, iamUser.user.Arn).ApplyT(func ( all []interface{}) error {
-		// 	urn := all[0].(string)	
-		// 	policy := all[1].(string)
-		// 	assert.Containsf(t, policy, "ecrPolicy", "Missing ECR policy on User %v", urn)
-		// 	wg.Done()
-		// 	return nil
-		// })
 
 		wg.Wait()
 		return nil
-	}, pulumi.WithMocks("project_name", "account_id", mocks.Mocks(0)))
+	}, pulumi.WithMocks("project", "stack", mocks.Mocks(0)))
 	assert.NoError(t, err)
 }
 

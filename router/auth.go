@@ -2,7 +2,7 @@ package router
 
 import (
 	"maos-cloud-project-api/config"
-	"maos-cloud-project-api/controllers"
+	"maos-cloud-project-api/controllers/auth"
 	"maos-cloud-project-api/middlewares"
 	"maos-cloud-project-api/utils"
 
