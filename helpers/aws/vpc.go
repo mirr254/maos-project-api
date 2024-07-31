@@ -25,17 +25,12 @@ type jumpbox struct {
 
 // CreateVPC: function is responsible for creating a new VPC with a public subnet and a private subnet in the project stack.
 
-func CreateVPC(project_name, stack_name string) error {
+func VPCOperations(program func(ctx *pulumi.Context) error, project_name, stack_name string) error {
 	
-	logrus.Info("Creating VPC: ", project_name)
+	logrus.Info("Performing VPC Ops on: ", project_name)
 	ctx := context.Background()
 
-	programWithParams := func(ctx *pulumi.Context) error {
-		_, err := CreateVPCResource(ctx, project_name)
-		return err
-	}
-
-	localWorkspace, err := auto.NewLocalWorkspace(ctx, auto.Program(programWithParams), auto.Project(workspace.Project{
+	localWorkspace, err := auto.NewLocalWorkspace(ctx, auto.Program(program), auto.Project(workspace.Project{
 		Name: tokens.PackageName(project_name),
 		Runtime: workspace.NewProjectRuntimeInfo("go", nil),
 	}))
@@ -50,6 +45,11 @@ func CreateVPC(project_name, stack_name string) error {
 		return err
 	}
 
+	if _, err := newStack.Refresh(ctx); err != nil {
+		logrus.Error("Could not refresh stack: ", err)
+		return err
+	}
+
 	//deploy
 	upRes, err := newStack.Up(ctx, optup.ProgressStreams(os.Stdout))
 	if err != nil {
@@ -57,7 +57,9 @@ func CreateVPC(project_name, stack_name string) error {
 		return err
 	}
 	
-	logrus.Info("Stack deployed successfully: ", upRes)
+	logrus.Info("Deploying...: ", upRes)
+
+	
 	return nil
 
 }
@@ -67,7 +69,7 @@ func CreateVPCResource(ctx *pulumi.Context, project_name string) ( *awsx.Vpc, er
 
 	// Create a new VPC with a public and private subnet.
 	vpc, err := awsx.NewVpc(ctx, project_name, &awsx.VpcArgs{
-		CidrBlock: pulumi.StringRef("172.16.8.0/24"),
+		CidrBlock: pulumi.StringRef("10.0.0.0/16"),
 		Tags: pulumi.StringMap{
 			"Name": pulumi.String(project_name),
 		},
@@ -91,7 +93,7 @@ func CreateVPCResource(ctx *pulumi.Context, project_name string) ( *awsx.Vpc, er
 			{
 				Type:     awsx.SubnetTypePrivate,
 				CidrMask: pulumi.IntRef(20),
-				Name:     pulumi.StringRef(project_name+" Private subnet N"),
+				Name:     pulumi.StringRef(project_name+" Private subnet B"),
 			},
 			
 		},
@@ -125,7 +127,7 @@ func CreateVPCResource(ctx *pulumi.Context, project_name string) ( *awsx.Vpc, er
 //create security group
 func createSecurityGroup(ctx *pulumi.Context, project_name string, vpc *awsx.Vpc) ( *sgGroup, error) {
 	// Create a new security group.
-	group, err := awsec2.NewSecurityGroup(ctx, project_name, &awsec2.SecurityGroupArgs{
+	group, err := awsec2.NewSecurityGroup(ctx, project_name+"test", &awsec2.SecurityGroupArgs{
 		VpcId: vpc.VpcId,
 		Ingress: awsec2.SecurityGroupIngressArray{
 			&awsec2.SecurityGroupIngressArgs{
@@ -133,7 +135,7 @@ func createSecurityGroup(ctx *pulumi.Context, project_name string, vpc *awsx.Vpc
 				FromPort: pulumi.Int(80),
 				ToPort:   pulumi.Int(80),
 				CidrBlocks: pulumi.StringArray{
-					pulumi.String("0.0.0/0"),
+					pulumi.String("0.0.0.0/0"),
 				},
 			},
 			&awsec2.SecurityGroupIngressArgs{
@@ -141,7 +143,7 @@ func createSecurityGroup(ctx *pulumi.Context, project_name string, vpc *awsx.Vpc
 				FromPort: pulumi.Int(22),
 				ToPort:   pulumi.Int(22),
 				CidrBlocks: pulumi.StringArray{
-					pulumi.String("10.0.0.0/0"), //TDO: Change this to a more secure IP
+					pulumi.String("10.0.0.0/24"), //TDO: Change this to a more secure IP
 				},
 			},
 			&awsec2.SecurityGroupIngressArgs{
