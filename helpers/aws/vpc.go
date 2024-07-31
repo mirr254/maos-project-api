@@ -1,8 +1,15 @@
-package aws
+package aws_helpers
 
 import (
+	"context"
+	"os"
+
 	awsec2 "github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ec2"
 	awsx "github.com/pulumi/pulumi-awsx/sdk/v2/go/awsx/ec2"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto"
+	"github.com/pulumi/pulumi/sdk/v3/go/auto/optup"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/tokens"
+	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/sirupsen/logrus"
 )
@@ -16,6 +23,44 @@ type jumpbox struct {
     sgGroup *awsec2.SecurityGroup
 }
 
+// CreateVPC: function is responsible for creating a new VPC with a public subnet and a private subnet in the project stack.
+
+func CreateVPC(project_name, stack_name string) error {
+	
+	logrus.Info("Creating VPC: ", project_name)
+	ctx := context.Background()
+
+	programWithParams := func(ctx *pulumi.Context) error {
+		_, err := CreateVPCResource(ctx, project_name)
+		return err
+	}
+
+	localWorkspace, err := auto.NewLocalWorkspace(ctx, auto.Program(programWithParams), auto.Project(workspace.Project{
+		Name: tokens.PackageName(project_name),
+		Runtime: workspace.NewProjectRuntimeInfo("go", nil),
+	}))
+	if err != nil {
+		logrus.Error("Could not create workspace: ", err)
+		return err
+	}
+
+	newStack, err := auto.SelectStack(ctx, stack_name, localWorkspace)
+	if err != nil {
+		logrus.Error("Could not select stack: ", err)
+		return err
+	}
+
+	//deploy
+	upRes, err := newStack.Up(ctx, optup.ProgressStreams(os.Stdout))
+	if err != nil {
+		logrus.Error("Could not deploy stack: ", err)
+		return err
+	}
+	
+	logrus.Info("Stack deployed successfully: ", upRes)
+	return nil
+
+}
 
 // CreateVPC creates a new VPC with a public subnet and a private subnet.
 func CreateVPCResource(ctx *pulumi.Context, project_name string) ( *awsx.Vpc, error) {
