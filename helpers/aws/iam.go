@@ -11,6 +11,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/common/tokens"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	// "github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -60,6 +61,19 @@ func CreateIAMUser(project_name, region, stack_name string) (error) {
 // func to to create a new IAM user
 
 func createIAMUserResource(ctx *pulumi.Context, project_name, region, account_id string) ( *iam.User, error) {
+	
+    // err = stack.Workspace().Program(ctx, func(ctx *pulumi.Context) error {
+
+	// 	cfg := config.New(ctx, "")
+	// 	awsRegion, err := cfg.Try("aws:region")
+	// 	if err != nil {
+	// 		logrus.Errorf("Could not get AWS region from config: %v", err)
+	// 		return err
+	// 	}
+	// 	logrus.Infof("CONFIG: AWS Region: %s", awsRegion)
+	// 	return nil
+
+	// })
 	// Create an IAM user
 	user, err := iam.NewUser(ctx, project_name, &iam.UserArgs{
 		Name: pulumi.String( project_name ),
